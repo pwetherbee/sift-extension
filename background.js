@@ -90,6 +90,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         target: { tabId: tabs[0].id },
         function: function (data) {
           // We'll implement this function in the content script
+
           window.removeElements(data);
         },
         args: [request.filteredTweets],

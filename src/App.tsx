@@ -106,7 +106,11 @@ function App() {
         <Typography align="center">
           Found {foundTweets.length} tweets
         </Typography>
-        <Stack alignItems={"center"}>
+        <Box
+          sx={{
+            m: 1,
+          }}
+        >
           <TextField
             fullWidth
             minRows={2}
@@ -116,7 +120,15 @@ function App() {
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
           />
-          <Button variant="contained" onClick={handleFilterTweets}>
+        </Box>
+        <Stack alignItems={"center"}>
+          <Button
+            sx={{
+              m: 1,
+            }}
+            variant="contained"
+            onClick={handleFilterTweets}
+          >
             Click to Filter Tweets
           </Button>
         </Stack>
