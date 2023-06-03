@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "name": "Content Filter GPT",
+  "action": {
+    "default_icon": {
+      "16": "images/filter-flat.png",
+      "24": "images/filter-flat.png",
+      "32": "images/filter-flat.png"
+    },
+    "default_popup": "dist/js/index.html",
+    "default_title": "Content Filter GPT"
+  }
+}
