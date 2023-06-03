@@ -1,38 +1,3 @@
-// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-//   if (changeInfo.status === "complete") {
-//     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-//       chrome.scripting.executeScript({
-//         target: { tabId: tabs[0].id },
-//         func: function () {
-//           let elements = document.querySelectorAll(
-//             '[data-testid="tweetText"] span'
-//           );
-//           let texts = Array.from(elements).map(
-//             (element) => element.textContent
-//           );
-//           if (elements.length > 0) {
-//             chrome.runtime.sendMessage({
-//               executeFilter: true,
-//               elements,
-//               texts,
-//             });
-//           }
-//         },
-//       });
-//     });
-//   } else {
-//     chrome.action.setBadgeText({ text: "" });
-//   }
-// });
-
-function getTweets() {
-  const elements = document.querySelectorAll('[data-testid="tweetText"] span');
-  const texts = Array.from(elements).map((element) => element.textContent);
-  if (texts.length > 0) {
-    chrome.runtime.sendMessage({ executeFilter: true, texts });
-  }
-}
-
 function startObserving(tabId) {
   chrome.scripting.executeScript({
     target: { tabId },
@@ -42,14 +7,26 @@ function startObserving(tabId) {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
-            const elements = document.querySelectorAll(
-              '[data-testid="tweetText"]'
-            );
-            const texts = Array.from(elements).map(
-              (element) => element.textContent
-            );
-            if (texts.length > 0) {
-              chrome.runtime.sendMessage({ executeFilter: true, texts });
+            const elements = document.querySelectorAll('[data-testid="tweet"]');
+            // const uniqueIds = Array.from(elements).map((element) => element.id);
+            // const texts = Array.from(elements).map(
+            //   (element) => element.textContent
+            // );
+
+            // zip up the ids and texts
+            // const tweets = uniqueIds.map((id, index) => {
+            //   return { id, text: texts[index] };
+            // });
+
+            const tweets = Array.from(elements).map((element) => {
+              return { id: element.id, text: element.textContent };
+            });
+
+            if (tweets.length > 0) {
+              chrome.runtime.sendMessage({
+                executeFilter: true,
+                tweets,
+              });
             }
           }
         });
@@ -92,8 +69,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.executeFilter) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
       console.log("call back text");
-      console.log(request.texts);
-      chrome.action.setBadgeText({ text: request.texts.length.toString() });
+      console.log(request.tweets);
+      chrome.action.setBadgeText({ text: request.tweets.length.toString() });
     });
     console.log("executing script");
   }
@@ -102,8 +79,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.executeFilter) {
     // Store the texts in local storage
-    chrome.storage.local.set({ texts: request.texts }, function () {
-      console.log("Value is set to " + request.texts);
+    chrome.storage.local.set({ tweets: request.tweets }, function () {
+      console.log("Value is set to " + request.tweets);
     });
   }
 });
