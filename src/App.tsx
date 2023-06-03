@@ -2,8 +2,10 @@ import "./App.css";
 import {
   Box,
   Button,
+  Divider,
   IconButton,
   Paper,
+  TextField,
   ThemeProvider,
   Typography,
 } from "@mui/material";
@@ -14,14 +16,14 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-interface FilteredTweet {
-  tweet: string;
-  hide: boolean;
-}
-
 interface Tweet {
   text: string;
   id: string;
+}
+
+interface FilteredTweet {
+  tweet: Tweet;
+  hide: boolean;
 }
 
 function App() {
@@ -30,7 +32,9 @@ function App() {
   const [foundTweets, setFoundTweets] = useState([] as Tweet[]);
   const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
 
-  console.log("App");
+  const [promptText, setPromptText] = useState(
+    "Remove all negative sounding tweets"
+  );
 
   // useEffect(() => {
   //   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -43,7 +47,6 @@ function App() {
   useEffect(() => {
     // Retrieve the texts from local storage
     chrome.storage.local.get(["tweets"], function (result) {
-      console.log("Value currently is " + result.tweets);
       setFoundTweets(result.tweets);
     });
   }, []);
@@ -54,10 +57,16 @@ function App() {
         "http://localhost:3000/api/filter-tweets",
         {
           tweets: foundTweets,
-          prompt: "Remove all negative sounding tweets",
+          prompt: promptText,
         }
       );
-      console.log(data);
+
+      setFilteredTweets(data.filteredTweets);
+
+      chrome.runtime.sendMessage({
+        executeFilter: true,
+        filteredTweets: data.filteredTweets,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -89,18 +98,45 @@ function App() {
           sx={{
             mt: 3,
           }}
-          variant="h5"
+          variant="h4"
           align="center"
         >
           Content Filter GPT
         </Typography>
-        <Typography variant="subtitle1" align="center">
-          Content Filter GPT
+        <Typography align="center">
+          Found {foundTweets.length} tweets
         </Typography>
-        <Button onClick={handleFilterTweets}>Filter Tweets</Button>
-        {foundTweets?.map((tweet) => (
+        <Stack alignItems={"center"}>
+          <TextField
+            fullWidth
+            minRows={2}
+            maxRows={4}
+            multiline
+            label="Prompt"
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+          />
+          <Button variant="contained" onClick={handleFilterTweets}>
+            Click to Filter Tweets
+          </Button>
+        </Stack>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Typography align="center" variant="h5">
+          Filtered Tweets
+        </Typography>
+
+        <Typography align="center" variant="subtitle1">
+          Removed {filteredTweets.filter((item) => item.hide).length}{" "}
+        </Typography>
+
+        {filteredTweets?.map((item) => (
           <Paper sx={{ p: 2, m: 1 }}>
-            <Typography variant="body2">{tweet.text}</Typography>
+            <Typography variant="body2">{item.tweet.text}</Typography>
+            <Typography variant="body2">
+              {item.hide ? "Hidden" : "Shown"}
+            </Typography>
           </Paper>
         ))}
       </Box>

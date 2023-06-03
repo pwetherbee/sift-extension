@@ -7,7 +7,9 @@ function startObserving(tabId) {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
-            const elements = document.querySelectorAll('[data-testid="tweet"]');
+            const elements = document.querySelectorAll(
+              '[data-testid="tweetText"]'
+            );
             // const uniqueIds = Array.from(elements).map((element) => element.id);
             // const texts = Array.from(elements).map(
             //   (element) => element.textContent
@@ -24,7 +26,7 @@ function startObserving(tabId) {
 
             if (tweets.length > 0) {
               chrome.runtime.sendMessage({
-                executeFilter: true,
+                grabbingTweets: true,
                 tweets,
               });
             }
@@ -66,10 +68,8 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.executeFilter) {
+  if (request.grabbingTweets) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-      console.log("call back text");
-      console.log(request.tweets);
       chrome.action.setBadgeText({ text: request.tweets.length.toString() });
     });
     console.log("executing script");
@@ -77,10 +77,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.executeFilter) {
+  if (request.grabbingTweets) {
     // Store the texts in local storage
-    chrome.storage.local.set({ tweets: request.tweets }, function () {
-      console.log("Value is set to " + request.tweets);
+    chrome.storage.local.set({ tweets: request.tweets }, function () {});
+  }
+});
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.executeFilter) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: function (data) {
+          // We'll implement this function in the content script
+          window.removeElements(data);
+        },
+        args: [request.filteredTweets],
+      });
     });
   }
 });
