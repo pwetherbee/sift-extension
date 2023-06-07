@@ -53,13 +53,10 @@ function App() {
 
   const handleFilterTweets = async () => {
     try {
-      const { data } = await axios.post(
-        "http://localhost:3000/api/filter-tweets",
-        {
-          tweets: foundTweets,
-          prompt: promptText,
-        }
-      );
+      const { data } = await axios.post("http://localhost:3000/api/filter", {
+        tweets: foundTweets,
+        prompt: promptText,
+      });
 
       setFilteredTweets(data.filteredTweets);
 
@@ -68,6 +65,7 @@ function App() {
         filteredTweets: data.filteredTweets,
       });
     } catch (error) {
+      alert(error);
       console.error(error);
     }
   };

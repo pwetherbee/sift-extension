@@ -1,7 +1,15 @@
+import axios from "axios";
+
 function startObserving(tabId) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
+      // only work for the domain twitter.com
+
+      if (!window.location.href.includes("twitter.com")) {
+        return;
+      }
+
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -10,23 +18,18 @@ function startObserving(tabId) {
             const elements = document.querySelectorAll(
               '[data-testid="tweetText"]'
             );
-            // const uniqueIds = Array.from(elements).map((element) => element.id);
-            // const texts = Array.from(elements).map(
-            //   (element) => element.textContent
-            // );
-
-            // zip up the ids and texts
-            // const tweets = uniqueIds.map((id, index) => {
-            //   return { id, text: texts[index] };
-            // });
 
             const tweets = Array.from(elements).map((element) => {
               return { id: element.id, text: element.textContent };
             });
 
             if (tweets.length > 0) {
+              // chrome.runtime.sendMessage({
+              //   grabbingTweets: true,
+              //   tweets,
+              // });
               chrome.runtime.sendMessage({
-                grabbingTweets: true,
+                fetchFilter: true,
                 tweets,
               });
             }
@@ -68,18 +71,53 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.grabbingTweets) {
+  if (request.fetchFilter) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
       chrome.action.setBadgeText({ text: request.tweets.length.toString() });
     });
+
     console.log("executing script");
   }
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.grabbingTweets) {
+  if (request.fetchFilter) {
     // Store the texts in local storage
     chrome.storage.local.set({ tweets: request.tweets }, function () {});
+  }
+});
+
+chrome.runtime.onMessage.addListener(async function (
+  request,
+  sender,
+  sendResponse
+) {
+  if (request.fetchFilter) {
+    try {
+      const res = await fetch("http://localhost:3000/api/filter", {
+        method: "POST", // Assuming you want to send a POST request
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          // Add any other headers here if necessary, e.g., "Authorization": "Bearer YOUR_TOKEN"
+        },
+        body: JSON.stringify({
+          tweets: foundTweets,
+          prompt: promptText,
+        }),
+      });
+
+      const data = await res.json();
+
+      setFilteredTweets(data.filteredTweets);
+
+      chrome.runtime.sendMessage({
+        executeFilter: true,
+        filteredTweets: data.filteredTweets,
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 });
 
