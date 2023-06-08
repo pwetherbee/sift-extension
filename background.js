@@ -1,15 +1,13 @@
-import axios from "axios";
+let controller = new AbortController();
 
 function startObserving(tabId) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
       // only work for the domain twitter.com
-
       if (!window.location.href.includes("twitter.com")) {
         return;
       }
-
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -24,10 +22,6 @@ function startObserving(tabId) {
             });
 
             if (tweets.length > 0) {
-              // chrome.runtime.sendMessage({
-              //   grabbingTweets: true,
-              //   tweets,
-              // });
               chrome.runtime.sendMessage({
                 fetchFilter: true,
                 tweets,
@@ -51,6 +45,105 @@ function startObserving(tabId) {
     },
   });
 }
+
+async function queryFilter(prompt, tweets) {
+  const res = await fetch("http://localhost:3000/api/filter", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      tweets,
+      prompt: prompt || "remove all negative sounding tweets",
+    }),
+    // signal: controller.signal,
+  });
+
+  const data = await res.json();
+
+  if (!data.response === "Success") {
+    console.error("Error in response");
+    return;
+  }
+  return data.filteredTweets;
+}
+
+function debouncedFetch(tweets) {
+  chrome.storage.local.get(["lastCallTime"], function (result) {
+    const lastCallTime = result.lastCallTime || 0;
+    const now = Date.now();
+
+    if (now - lastCallTime >= 1000) {
+      chrome.storage.local.set({ lastCallTime: now });
+      console.log("fetching api");
+
+      // Put your fetch call here inside setTimeout,
+      // so it's delayed by 1000 milliseconds
+      setTimeout(async () => {
+        try {
+          console.log("fetching data");
+          const result = await chrome.storage.local.get("prompt");
+          const promptText = result.prompt;
+
+          const filteredTweets = await queryFilter(promptText, tweets);
+
+          chrome.storage.local.set({ filteredTweets });
+
+          chrome.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+              chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (data) => {
+                  // We'll implement this function in the content script
+                  window.removeElements(data);
+                },
+                args: [filteredTweets],
+              });
+            }
+          );
+
+          console.log("sent message");
+        } catch (error) {
+          if (error.name === "AbortError") {
+            console.log("Fetch operation aborted");
+          } else {
+            console.error("error incoming");
+            console.error(error);
+          }
+        }
+      }, 1000);
+    } else {
+      console.log("Skipping fetch due to rate limit");
+    }
+  });
+}
+
+// Execute debounced fetch request
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.fetchFilter) {
+    debouncedFetch(request.tweets);
+  }
+  return true;
+});
+
+// Execute filter to remove elements
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.executeFilter) {
+    console.log("Removing elements");
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: (data) => {
+          // We'll implement this function in the content script
+          window.removeElements(data);
+        },
+        args: [request.filteredTweets],
+      });
+    });
+  }
+});
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {
@@ -84,55 +177,5 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
     // Store the texts in local storage
     chrome.storage.local.set({ tweets: request.tweets }, function () {});
-  }
-});
-
-chrome.runtime.onMessage.addListener(async function (
-  request,
-  sender,
-  sendResponse
-) {
-  if (request.fetchFilter) {
-    try {
-      const res = await fetch("http://localhost:3000/api/filter", {
-        method: "POST", // Assuming you want to send a POST request
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Add any other headers here if necessary, e.g., "Authorization": "Bearer YOUR_TOKEN"
-        },
-        body: JSON.stringify({
-          tweets: foundTweets,
-          prompt: promptText,
-        }),
-      });
-
-      const data = await res.json();
-
-      setFilteredTweets(data.filteredTweets);
-
-      chrome.runtime.sendMessage({
-        executeFilter: true,
-        filteredTweets: data.filteredTweets,
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  }
-});
-
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.executeFilter) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        function: function (data) {
-          // We'll implement this function in the content script
-
-          window.removeElements(data);
-        },
-        args: [request.filteredTweets],
-      });
-    });
   }
 });

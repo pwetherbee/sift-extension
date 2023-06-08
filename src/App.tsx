@@ -36,6 +36,12 @@ function App() {
     "Remove all negative sounding tweets"
   );
 
+  const handleSavePrompt = () => {
+    chrome.storage.local.set({ prompt: promptText }, function () {
+      console.log("Value is set to " + promptText);
+    });
+  };
+
   // useEffect(() => {
   //   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   //     if (request.action === "getSource") {
@@ -46,8 +52,8 @@ function App() {
 
   useEffect(() => {
     // Retrieve the texts from local storage
-    chrome.storage.local.get(["tweets"], function (result) {
-      setFoundTweets(result.tweets);
+    chrome.storage.local.get(["filteredTweets"], function (result) {
+      setFoundTweets(result.filteredTweets);
     });
   }, []);
 
@@ -69,6 +75,12 @@ function App() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    chrome.storage.local.get(["filteredTweets"], function (result) {
+      setFilteredTweets(result.filteredTweets);
+    });
+  }, []);
 
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
@@ -119,6 +131,7 @@ function App() {
             onChange={(e) => setPromptText(e.target.value)}
           />
         </Box>
+        <Button onClick={handleSavePrompt}>Save Prompt</Button>
         <Stack alignItems={"center"}>
           <Button
             sx={{
