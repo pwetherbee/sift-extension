@@ -26,7 +26,9 @@ window.removeElements = function (filteredTweets) {
 
       while (parentElement) {
         if (parentElement.getAttribute("data-testid") === "tweet") {
-          parentElement.remove();
+          // parentElement.removeChild()
+          parentElement.style.display = "none";
+          // parentElement.style.filter = 'blur(5px)';
           break;
         }
         parentElement = parentElement.parentNode;
@@ -34,3 +36,24 @@ window.removeElements = function (filteredTweets) {
     }
   });
 };
+
+window.grabAndFilter = function () {
+  const elements = document.querySelectorAll('[data-testid="tweetText"]');
+
+  const tweets = Array.from(elements).map((element) => {
+    return { id: element.id, text: element.textContent };
+  });
+
+  if (tweets.length > 0) {
+    chrome.runtime.sendMessage({
+      fetchFilter: true,
+      tweets,
+    });
+  }
+};
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "grabAndFilter") {
+    window.grabAndFilter();
+  }
+});

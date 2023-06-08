@@ -42,18 +42,14 @@ function App() {
     });
   };
 
-  // useEffect(() => {
-  //   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  //     if (request.action === "getSource") {
-  //       console.log(request.source); // This will log the source text sent from the content script
-  //     }
-  //   });
-  // }, []);
-
   useEffect(() => {
     // Retrieve the texts from local storage
     chrome.storage.local.get(["filteredTweets"], function (result) {
       setFoundTweets(result.filteredTweets);
+    });
+
+    chrome.storage.local.get(["prompt"], function (result) {
+      setPromptText(result.prompt);
     });
   }, []);
 

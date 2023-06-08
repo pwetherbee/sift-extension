@@ -1,32 +1,45 @@
 let controller = new AbortController();
 
+function grabAndFilter() {
+  const elements = document.querySelectorAll('[data-testid="tweetText"]');
+
+  const tweets = Array.from(elements).map((element) => {
+    return { id: element.id, text: element.textContent };
+  });
+
+  if (tweets.length > 0) {
+    chrome.runtime.sendMessage({
+      fetchFilter: true,
+      tweets,
+    });
+  }
+}
+
 function startObserving(tabId) {
+  // if domain is not twitter.com, return
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      // only work for the domain twitter.com
-      if (!window.location.href.includes("twitter.com")) {
-        return;
+      function grabAndFilter() {
+        const elements = document.querySelectorAll('[data-testid="tweetText"]');
+
+        const tweets = Array.from(elements).map((element) => {
+          return { id: element.id, text: element.textContent };
+        });
+
+        if (tweets.length > 0) {
+          chrome.runtime.sendMessage({
+            fetchFilter: true,
+            tweets,
+          });
+        }
       }
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
-            const elements = document.querySelectorAll(
-              '[data-testid="tweetText"]'
-            );
-
-            const tweets = Array.from(elements).map((element) => {
-              return { id: element.id, text: element.textContent };
-            });
-
-            if (tweets.length > 0) {
-              chrome.runtime.sendMessage({
-                fetchFilter: true,
-                tweets,
-              });
-            }
+            grabAndFilter();
           }
         });
       });
@@ -145,10 +158,35 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
+// Start the observer when the tab is updated
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {
+    // Check the URL of the updated tab
+    if (!tab.url.includes("twitter.com")) {
+      return;
+    }
+
+    // Call startObserving only if the URL is for twitter.com
     startObserving(tabId);
+  } else {
+    chrome.action.setBadgeText({ text: "" });
   }
+});
+
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    for (let key in changes) {
+      let storageChange = changes[key];
+      if (key === "prompt" && namespace === "local") {
+        // Check if the value has actually changed
+        if (storageChange.oldValue !== storageChange.newValue) {
+          // Your prompt has changed, trigger the function
+          chrome.tabs.sendMessage(tabs[0].id, { action: "grabAndFilter" });
+        }
+      }
+    }
+  });
 });
 
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
