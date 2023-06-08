@@ -2,9 +2,16 @@ import "./App.css";
 import {
   Box,
   Button,
+  Checkbox,
   Divider,
+  FormControl,
+  FormControlLabel,
+  FormGroup,
+  FormLabel,
   IconButton,
   Paper,
+  Tab,
+  Tabs,
   TextField,
   ThemeProvider,
   Typography,
@@ -13,6 +20,8 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { darkTheme, lightTheme } from "../styles/theme";
 import { Stack } from "@mui/system";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -26,32 +35,76 @@ interface FilteredTweet {
   hide: boolean;
 }
 
+function TabPanel(props: any) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <Typography
+      component="div"
+      role="tabpanel"
+      sx={{ p: 1 }}
+      hidden={value !== index}
+      id={`vertical-tabpanel-${index}`}
+      aria-labelledby={`vertical-tab-${index}`}
+      {...other}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+// use chrome.storage.local
+
+function useLocalStorageState<T>(
+  key: string,
+  defaultValue: T
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(defaultValue);
+
+  useEffect(() => {
+    // Fetch the value from chrome storage and update the state
+    chrome.storage.local.get([key], (result) => {
+      setState(result[key] ?? defaultValue);
+    });
+  }, [key, defaultValue]);
+
+  useEffect(() => {
+    // Whenever state changes, save it to chrome storage
+    chrome.storage.local.set({ [key]: state });
+  }, [key, state]);
+
+  return [state, setState];
+}
+
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
   const [foundTweets, setFoundTweets] = useState([] as Tweet[]);
   const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
 
-  const [promptText, setPromptText] = useState(
+  const [filterOn, setFilterOn] = useState(true);
+
+  const [promptText, setPromptText] = useLocalStorageState(
+    "prompt",
     "Remove all negative sounding tweets"
   );
 
-  const handleSavePrompt = () => {
-    chrome.storage.local.set({ prompt: promptText }, function () {
-      console.log("Value is set to " + promptText);
-    });
-  };
+  const [newPrompt, setNewPrompt] = useState("");
+
+  useEffect(() => {
+    setNewPrompt(promptText);
+  }, [promptText]);
 
   useEffect(() => {
     // Retrieve the texts from local storage
     chrome.storage.local.get(["filteredTweets"], function (result) {
       setFoundTweets(result.filteredTweets);
     });
-
-    chrome.storage.local.get(["prompt"], function (result) {
-      setPromptText(result.prompt);
-    });
   }, []);
+
+  const handleSavePrompt = () => {
+    setPromptText(newPrompt);
+  };
 
   const handleFilterTweets = async () => {
     try {
@@ -78,6 +131,8 @@ function App() {
     });
   }, []);
 
+  const [activeTab, setActiveTab] = useState(0);
+
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
       <CssBaseline />
@@ -86,6 +141,7 @@ function App() {
           width: 350,
           height: 550,
           bgcolor: "background.paper",
+          borderRadius: 2,
         }}
       >
         <Stack
@@ -102,62 +158,114 @@ function App() {
         </Stack>
         <Typography
           sx={{
-            mt: 3,
+            mt: 1,
           }}
-          variant="h4"
+          variant="h5"
           align="center"
         >
           Content Filter GPT
         </Typography>
-        <Typography align="center">
-          Found {foundTweets.length} tweets
-        </Typography>
-        <Box
-          sx={{
-            m: 1,
-          }}
-        >
-          <TextField
-            fullWidth
-            minRows={2}
-            maxRows={4}
-            multiline
-            label="Prompt"
-            value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
-          />
-        </Box>
-        <Button onClick={handleSavePrompt}>Save Prompt</Button>
-        <Stack alignItems={"center"}>
-          <Button
+        <Stack direction={"row"} spacing={2} justifyContent={"center"}>
+          <IconButton size="large" onClick={() => setFilterOn((prev) => !prev)}>
+            {filterOn ? (
+              <FilterAltIcon fontSize="large" />
+            ) : (
+              <FilterAltOffIcon fontSize="large" />
+            )}
+          </IconButton>
+        </Stack>
+
+        <Stack direction={"row"} spacing={2} justifyContent={"center"}>
+          <Tabs value={activeTab} onChange={(e, value) => setActiveTab(value)}>
+            <Tab label="Filters" />
+            <Tab label="Results" />
+            <Tab label="Settings" />
+          </Tabs>
+        </Stack>
+
+        <TabPanel value={activeTab} index={0}>
+          <FormControl
             sx={{
               m: 1,
             }}
-            variant="contained"
-            onClick={handleFilterTweets}
           >
-            Click to Filter Tweets
-          </Button>
-        </Stack>
+            <FormLabel>Filter List</FormLabel>
+            <FormGroup>
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Spam"
+              />
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Politics"
+              />
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Rants"
+              />
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Racism"
+              />
+            </FormGroup>
+          </FormControl>
+          <Stack
+            alignItems={"center"}
+            sx={{
+              m: 1,
+            }}
+          >
+            <TextField
+              fullWidth
+              minRows={2}
+              maxRows={4}
+              multiline
+              label="Prompt"
+              value={newPrompt}
+              onChange={(e) => setNewPrompt(e.target.value)}
+            />
+            <Button onClick={handleSavePrompt}>Save Prompt</Button>
+          </Stack>
+        </TabPanel>
+        <TabPanel value={activeTab} index={1}>
+          <Typography align="center" variant="h5">
+            Filtered Tweets
+          </Typography>
 
-        <Divider sx={{ my: 2 }} />
+          <Typography align="center" variant="subtitle1">
+            Removed {filteredTweets.filter((item) => item.hide).length}{" "}
+          </Typography>
 
-        <Typography align="center" variant="h5">
-          Filtered Tweets
-        </Typography>
-
-        <Typography align="center" variant="subtitle1">
-          Removed {filteredTweets.filter((item) => item.hide).length}{" "}
-        </Typography>
-
-        {filteredTweets?.map((item) => (
-          <Paper sx={{ p: 2, m: 1 }}>
-            <Typography variant="body2">{item.tweet.text}</Typography>
-            <Typography variant="body2">
-              {item.hide ? "Hidden" : "Shown"}
-            </Typography>
-          </Paper>
-        ))}
+          {filteredTweets
+            ?.filter((item) => item.hide)
+            .map((item) => (
+              <Paper sx={{ p: 2, m: 1 }}>
+                <Typography variant="body2">{item.tweet.text}</Typography>
+                <Typography variant="body2">
+                  {item.hide ? "Hidden" : "Shown"}
+                </Typography>
+              </Paper>
+            ))}
+        </TabPanel>
+        <TabPanel value={activeTab} index={2}>
+          <FormControl
+            sx={{
+              m: 1,
+            }}
+          >
+            <FormLabel>Filter</FormLabel>
+            <FormGroup>
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Blur Items"
+              />
+              <FormControlLabel
+                control={<Checkbox checked={true} />}
+                label="Auto Hide"
+              />
+            </FormGroup>
+          </FormControl>
+        </TabPanel>
       </Box>
     </ThemeProvider>
   );
