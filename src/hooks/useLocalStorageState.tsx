@@ -16,13 +16,19 @@ export default function useLocalStorageState<T>(
     });
   }, [key]);
 
-  useEffect(() => {
-    if (JSON.stringify(state) !== JSON.stringify(storedValueRef.current)) {
-      chrome.storage.local.set({ [key]: state }, () => {
-        storedValueRef.current = state;
+  const changeState: React.Dispatch<React.SetStateAction<T>> = (
+    value: React.SetStateAction<T>
+  ) => {
+    const newState =
+      typeof value === "function" ? (value as Function)(state) : value;
+
+    if (JSON.stringify(newState) !== JSON.stringify(storedValueRef.current)) {
+      chrome.storage.local.set({ [key]: newState }, () => {
+        storedValueRef.current = newState;
+        setState(newState);
       });
     }
-  }, [key, state]);
+  };
 
-  return [state, setState];
+  return [state, changeState];
 }
