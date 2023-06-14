@@ -24,6 +24,7 @@ import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import useLocalStorageState from "./hooks/useLocalStorageState";
 
 interface Tweet {
   text: string;
@@ -54,27 +55,6 @@ function TabPanel(props: any) {
 }
 
 // use chrome.storage.local
-
-function useLocalStorageState<T>(
-  key: string,
-  defaultValue: T
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [state, setState] = useState<T>(defaultValue);
-
-  useEffect(() => {
-    // Fetch the value from chrome storage and update the state
-    chrome.storage.local.get([key], (result) => {
-      setState(result[key] ?? defaultValue);
-    });
-  }, [key, defaultValue]);
-
-  useEffect(() => {
-    // Whenever state changes, save it to chrome storage
-    chrome.storage.local.set({ [key]: state });
-  }, [key, state]);
-
-  return [state, setState];
-}
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -189,7 +169,7 @@ function App() {
               m: 1,
             }}
           >
-            <FormLabel>Filter List</FormLabel>
+            <FormLabel>Remove:</FormLabel>
             <FormGroup>
               <FormControlLabel
                 control={<Checkbox checked={true} />}
@@ -233,7 +213,7 @@ function App() {
           </Typography>
 
           <Typography align="center" variant="subtitle1">
-            Removed {filteredTweets.filter((item) => item.hide).length}{" "}
+            Removed {filteredTweets?.filter((item) => item.hide).length}{" "}
           </Typography>
 
           {filteredTweets
@@ -253,7 +233,7 @@ function App() {
               m: 1,
             }}
           >
-            <FormLabel>Filter</FormLabel>
+            <FormLabel>Filter Settings</FormLabel>
             <FormGroup>
               <FormControlLabel
                 control={<Checkbox checked={true} />}
