@@ -36,6 +36,13 @@ interface FilteredTweet {
   hide: boolean;
 }
 
+interface Settings {
+  blur: boolean;
+  autoHide: boolean;
+}
+
+const defaultFilterKeys = ["politics", "racism", "spam", "rants"];
+
 function TabPanel(props: any) {
   const { children, value, index, ...other } = props;
 
@@ -57,7 +64,7 @@ function TabPanel(props: any) {
 // use chrome.storage.local
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useLocalStorageState("darkMode", false);
 
   const [foundTweets, setFoundTweets] = useState([] as Tweet[]);
   const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
@@ -68,6 +75,40 @@ function App() {
     "prompt",
     "Remove all negative sounding tweets"
   );
+
+  const [disabled, setDisabled] = useLocalStorageState("disabled", false);
+
+  const [filterConfig, setFilterConfig] = useLocalStorageState("filterConfig", {
+    defaults: ["politics", "racism", "spam", "rants"],
+    custom: ["remove all negative sounding tweets"],
+  });
+
+  const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
+    blur: false,
+    autoHide: true,
+  });
+
+  const isSettingsChecked = (key: keyof Settings) => {
+    return settings[key];
+  };
+
+  const isChecked = (key: string) => {
+    return filterConfig.defaults.includes(key);
+  };
+
+  const handleCheck = (key: string) => (e: any) => {
+    if (e.target.checked) {
+      setFilterConfig((prev) => ({
+        ...prev,
+        defaults: [...prev.defaults, key],
+      }));
+    } else {
+      setFilterConfig((prev) => ({
+        ...prev,
+        defaults: prev.defaults.filter((item) => item !== key),
+      }));
+    }
+  };
 
   const [newPrompt, setNewPrompt] = useState("");
 
@@ -146,15 +187,14 @@ function App() {
           Content Filter GPT
         </Typography>
         <Stack direction={"row"} spacing={2} justifyContent={"center"}>
-          <IconButton size="large" onClick={() => setFilterOn((prev) => !prev)}>
-            {filterOn ? (
+          <IconButton size="large" onClick={() => setDisabled((prev) => !prev)}>
+            {!disabled ? (
               <FilterAltIcon fontSize="large" />
             ) : (
               <FilterAltOffIcon fontSize="large" />
             )}
           </IconButton>
         </Stack>
-
         <Stack direction={"row"} spacing={2} justifyContent={"center"}>
           <Tabs value={activeTab} onChange={(e, value) => setActiveTab(value)}>
             <Tab label="Filters" />
@@ -162,7 +202,6 @@ function App() {
             <Tab label="Settings" />
           </Tabs>
         </Stack>
-
         <TabPanel value={activeTab} index={0}>
           <FormControl
             sx={{
@@ -171,24 +210,20 @@ function App() {
           >
             <FormLabel>Remove:</FormLabel>
             <FormGroup>
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Spam"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Politics"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Rants"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Racism"
-              />
+              {defaultFilterKeys.map((key) => (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isChecked(key)}
+                      onChange={handleCheck(key)}
+                    />
+                  }
+                  label={key}
+                />
+              ))}
             </FormGroup>
           </FormControl>
+
           <Stack
             alignItems={"center"}
             sx={{
