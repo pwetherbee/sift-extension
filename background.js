@@ -68,7 +68,7 @@ async function queryFilter(prompt, tweets) {
     },
     body: JSON.stringify({
       tweets,
-      prompt: prompt || "remove all negative sounding tweets",
+      prompt,
     }),
     // signal: controller.signal,
   });
@@ -97,9 +97,9 @@ function debouncedFetch(tweets) {
         try {
           console.log("fetching data");
           const result = await chrome.storage.local.get("prompt");
-          const promptText = result.prompt;
+          const filterConfig = await chrome.storage.local.get("filterConfig");
 
-          const filteredTweets = await queryFilter(promptText, tweets);
+          const filteredTweets = await queryFilter(filterConfig, tweets);
 
           chrome.storage.local.set({ filteredTweets });
 
@@ -133,7 +133,7 @@ function debouncedFetch(tweets) {
   });
 }
 
-// Execute debounced fetch request
+// Execute debounced fetch request to filter api
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
     debouncedFetch(request.tweets);
@@ -159,7 +159,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 // Start the observer when the tab is updated
-
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {
     // Check the URL of the updated tab
@@ -178,7 +177,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     for (let key in changes) {
       let storageChange = changes[key];
-      if (key === "prompt" && namespace === "local") {
+      if (key === "filterConfig" && namespace === "local") {
         // Check if the value has actually changed
         if (storageChange.oldValue !== storageChange.newValue) {
           // Your prompt has changed, trigger the function
@@ -189,11 +188,11 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
+// Stop observing when the tab is closed
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      // Stop observing when the tab is closed
       if (window.observer) {
         window.observer.disconnect();
       }
@@ -201,6 +200,7 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   });
 });
 
+// set the badge text to the number of tweets
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
@@ -211,9 +211,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
+// Store the texts in local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
-    // Store the texts in local storage
     chrome.storage.local.set({ tweets: request.tweets }, function () {});
   }
 });
