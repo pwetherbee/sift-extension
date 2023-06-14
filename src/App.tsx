@@ -66,14 +66,10 @@ function TabPanel(props: any) {
 
 function App() {
   const [darkMode, setDarkMode] = useLocalStorageState("darkMode", false);
-
-  const [foundTweets, setFoundTweets] = useState([] as Tweet[]);
   const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
-
-  const [filterOn, setFilterOn] = useState(true);
-
+  const [currentDomain, setCurrentDomain] = useState("");
   const [disabled, setDisabled] = useLocalStorageState("disabled", false);
-
+  const [newPrompt, setNewPrompt] = useState("");
   const [filterConfig, setFilterConfig] = useLocalStorageState("filterConfig", {
     defaults: ["politics", "racism", "spam", "rants"],
     custom: [
@@ -140,15 +136,6 @@ function App() {
     }));
   };
 
-  const [newPrompt, setNewPrompt] = useState("");
-
-  useEffect(() => {
-    // Retrieve the texts from local storage
-    chrome.storage.local.get(["filteredTweets"], function (result) {
-      setFoundTweets(result.filteredTweets);
-    });
-  }, []);
-
   const handleSavePrompt = () => {
     setFilterConfig((prev) => ({
       ...prev,
@@ -163,22 +150,14 @@ function App() {
     setNewPrompt("");
   };
 
-  const handleFilterTweets = async () => {
-    // try {
-    //   const { data } = await axios.post("http://localhost:3000/api/filter", {
-    //     tweets: foundTweets,
-    //     prompt: promptText,
-    //   });
-    //   setFilteredTweets(data.filteredTweets);
-    //   chrome.runtime.sendMessage({
-    //     executeFilter: true,
-    //     filteredTweets: data.filteredTweets,
-    //   });
-    // } catch (error) {
-    //   alert(error);
-    //   console.error(error);
-    // }
-  };
+  useEffect(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0].url) return;
+      const url = new URL(tabs[0].url);
+      const domain = url.hostname;
+      setCurrentDomain(domain);
+    });
+  }, []);
 
   useEffect(() => {
     chrome.storage.local.get(["filteredTweets"], function (result) {
@@ -202,33 +181,48 @@ function App() {
         <Stack
           direction={"row"}
           spacing={2}
-          justifyContent={"flex-end"}
+          justifyContent={"space-between"}
           sx={{
             m: 1,
           }}
+          alignItems={"center"}
         >
+          <Typography variant="subtitle2">
+            <strong>{currentDomain}</strong>
+          </Typography>
           <IconButton onClick={() => setDarkMode((prev) => !prev)}>
             <LightModeIcon />
           </IconButton>
         </Stack>
-        <Typography
-          sx={{
-            mt: 1,
-          }}
-          variant="h5"
-          align="center"
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"center"}
+          spacing={0}
         >
-          Content Filter GPT
-        </Typography>
-        <Stack direction={"row"} spacing={2} justifyContent={"center"}>
           <IconButton size="large" onClick={() => setDisabled((prev) => !prev)}>
             {!disabled ? (
-              <FilterAltIcon fontSize="large" />
+              <FilterAltIcon
+                sx={{
+                  fontSize: 50,
+                }}
+              />
             ) : (
-              <FilterAltOffIcon fontSize="large" />
+              <FilterAltOffIcon
+                sx={{
+                  fontSize: 50,
+                }}
+              />
             )}
           </IconButton>
+          <Typography variant="h3">
+            <strong>Sift</strong>
+          </Typography>
         </Stack>
+        <Typography variant="h6" align="center">
+          Filter the internet
+        </Typography>
+        <Stack direction={"row"} spacing={2} justifyContent={"center"}></Stack>
         <Stack direction={"row"} spacing={2} justifyContent={"center"}>
           <Tabs value={activeTab} onChange={(e, value) => setActiveTab(value)}>
             <Tab label="Filters" />
