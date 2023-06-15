@@ -59,7 +59,7 @@ function startObserving(tabId) {
   });
 }
 
-async function queryFilter(prompt, tweets) {
+async function queryFilter(filters, tweets) {
   const res = await fetch("http://localhost:3000/api/filter", {
     method: "POST",
     headers: {
@@ -68,7 +68,7 @@ async function queryFilter(prompt, tweets) {
     },
     body: JSON.stringify({
       tweets,
-      prompt,
+      filters,
     }),
     // signal: controller.signal,
   });
@@ -102,6 +102,10 @@ function debouncedFetch(tweets) {
           const filteredTweets = await queryFilter(filterConfig, tweets);
 
           chrome.storage.local.set({ filteredTweets });
+
+          if (!filteredTweets) {
+            return;
+          }
 
           chrome.tabs.query(
             { active: true, currentWindow: true },
@@ -173,11 +177,20 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   }
 });
 
+// get current tab
+// async function getCurrentTab() {
+//   let queryOptions = { active: true, lastFocusedWindow: true };
+//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
+//   let [tab] = await chrome.tabs.query(queryOptions);
+//   return tab;
+// }
+
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     for (let key in changes) {
       let storageChange = changes[key];
       if (key === "filterConfig" && namespace === "local") {
+        console.warn("filter config changed");
         // Check if the value has actually changed
         if (storageChange.oldValue !== storageChange.newValue) {
           // Your prompt has changed, trigger the function
@@ -187,6 +200,13 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     }
   });
 });
+
+// receive the grabAndFilter message
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//   if (request.action === "grabAndFilter") {
+//     console.warn("message received");
+//   }
+// });
 
 // Stop observing when the tab is closed
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {

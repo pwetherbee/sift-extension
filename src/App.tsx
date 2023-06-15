@@ -42,7 +42,7 @@ interface Settings {
   autoHide: boolean;
 }
 
-const defaultFilterKeys = ["politics", "racism", "spam", "rants"];
+const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 
 function TabPanel(props: any) {
   const { children, value, index, ...other } = props;
@@ -71,7 +71,7 @@ function App() {
   const [disabled, setDisabled] = useLocalStorageState("disabled", false);
   const [newPrompt, setNewPrompt] = useState("");
   const [filterConfig, setFilterConfig] = useLocalStorageState("filterConfig", {
-    defaults: ["politics", "racism", "spam", "rants"],
+    defaults: defaultFilterKeys,
     custom: [
       {
         text: "remove all negative sounding tweets",
@@ -165,6 +165,10 @@ function App() {
     });
   }, []);
 
+  const clearCache = () => {
+    chrome.storage.local.clear();
+  };
+
   const [activeTab, setActiveTab] = useState(0);
 
   return (
@@ -188,7 +192,7 @@ function App() {
           alignItems={"center"}
         >
           <Typography variant="subtitle2">
-            <strong>{currentDomain}</strong>
+            <>{currentDomain}</>
           </Typography>
           <IconButton onClick={() => setDarkMode((prev) => !prev)}>
             <LightModeIcon />
@@ -336,6 +340,9 @@ function App() {
                 control={<Checkbox checked={true} />}
                 label="Auto Hide"
               />
+              <Button variant="outlined" color="error" onClick={clearCache}>
+                Reset Cache
+              </Button>
             </FormGroup>
           </FormControl>
         </TabPanel>

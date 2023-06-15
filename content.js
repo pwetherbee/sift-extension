@@ -19,6 +19,9 @@ window.removeElements = function (filteredTweets) {
           parentElement.style.display = "none";
           // parentElement.style.filter = 'blur(5px)';
           break;
+        } else {
+          // remove display=none from parentElement
+          parentElement.style.display = "";
         }
         parentElement = parentElement.parentNode;
       }
