@@ -20,6 +20,16 @@ function startObserving(tabId) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
+      function debounceHandler(func, delay) {
+        let debounceTimer;
+        return function () {
+          const context = this;
+          const args = arguments;
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => func.apply(context, args), delay);
+        };
+      }
+
       function grabAndFilter() {
         const elements = document.querySelectorAll('[data-testid="tweetText"]');
 
@@ -34,12 +44,16 @@ function startObserving(tabId) {
           });
         }
       }
+
+      // Apply debounce to grabAndFilter function
+      const debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);
+
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
-            grabAndFilter();
+            debouncedGrabAndFilter();
           }
         });
       });

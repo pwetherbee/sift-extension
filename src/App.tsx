@@ -85,6 +85,16 @@ function App() {
     autoHide: true,
   });
 
+  const [test, setTest] = useLocalStorageState("test", {
+    test: "test",
+  });
+
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    setCount(count + 1);
+  }, [filterConfig]);
+
   const isSettingsChecked = (key: keyof Settings) => {
     return settings[key];
   };
@@ -182,6 +192,7 @@ function App() {
           borderRadius: 2,
         }}
       >
+        {count}
         <Stack
           direction={"row"}
           spacing={2}
@@ -223,7 +234,7 @@ function App() {
             <strong>Sift</strong>
           </Typography>
         </Stack>
-        <Typography variant="h6" align="center">
+        <Typography variant="subtitle2" align="center">
           Filter the internet
         </Typography>
         <Stack direction={"row"} spacing={2} justifyContent={"center"}></Stack>
