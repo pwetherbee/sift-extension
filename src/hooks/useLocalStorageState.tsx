@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import isEqual from "lodash.isequal";
 
 export default function useLocalStorageState<T>(
   key: string,
@@ -25,7 +26,7 @@ export default function useLocalStorageState<T>(
 
       if (
         !storedValueRef.current ||
-        !deepEqual(newState, storedValueRef.current)
+        !isEqual(newState, storedValueRef.current)
       ) {
         setLoading(true);
         chrome.storage.local.set({ [key]: newState }, () => {

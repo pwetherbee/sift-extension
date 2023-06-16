@@ -85,15 +85,11 @@ function App() {
     autoHide: true,
   });
 
-  const [test, setTest] = useLocalStorageState("test", {
-    test: "test",
-  });
+  // const [count, setCount] = useState(0);
 
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    setCount(count + 1);
-  }, [filterConfig]);
+  // useEffect(() => {
+  //   setCount(count + 1);
+  // }, [filterConfig]);
 
   const isSettingsChecked = (key: keyof Settings) => {
     return settings[key];
@@ -175,6 +171,13 @@ function App() {
     });
   }, []);
 
+  useEffect(() => {
+    // send message to content script
+    chrome.runtime.sendMessage({
+      grabAndFilter: true,
+    });
+  }, [filterConfig]);
+
   const clearCache = () => {
     chrome.storage.local.clear();
   };
@@ -192,7 +195,7 @@ function App() {
           borderRadius: 2,
         }}
       >
-        {count}
+        {/* {count} */}
         <Stack
           direction={"row"}
           spacing={2}

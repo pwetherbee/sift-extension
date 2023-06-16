@@ -215,10 +215,23 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
-// receive the grabAndFilter message
-// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+// async function getCurrentTab() {
+//   let queryOptions = { active: true, lastFocusedWindow: true };
+//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
+//   let [tab] = await chrome.tabs.query(queryOptions);
+//   return tab;
+// }
+
+// // receive the grabAndFilter message
+// chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 //   if (request.action === "grabAndFilter") {
-//     console.warn("message received");
+//     const tab = await getCurrentTab();
+//     chrome.scripting.executeScript({
+//       target: { tabId: tab.id },
+//       func: () => {
+//         grabAndFilter();
+//       },
+//     });
 //   }
 // });
 
