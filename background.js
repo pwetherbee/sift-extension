@@ -1,19 +1,31 @@
 let controller = new AbortController();
 
-function grabAndFilter() {
-  const elements = document.querySelectorAll('[data-testid="tweetText"]');
+// function grabAndFilter() {
+//   // only tweetText has a unique id
+//   const elements = document.querySelectorAll('[data-testid="tweetText"]');
+//   t;
 
-  const tweets = Array.from(elements).map((element) => {
-    return { id: element.id, text: element.textContent };
-  });
+//   const tweets = Array.from(elements).map((element) => {
+//     // look for parent element tweet to grab full context
+//     let parentElement = element.parentNode;
+//     while (parentElement) {
+//       if (parentElement.getAttribute("data-testid") === "tweet") {
+//         return { id: element.id, text: element.textContent };
+//       }
+//       parentElement = parentElement.parentNode;
+//     }
+//   });
 
-  if (tweets.length > 0) {
-    chrome.runtime.sendMessage({
-      fetchFilter: true,
-      tweets,
-    });
-  }
-}
+//   const contextElement = document.querySelector('[tabindex="-1"]');
+
+//   if (tweets.length > 0) {
+//     chrome.runtime.sendMessage({
+//       fetchFilter: true,
+//       tweets,
+//       context: contextElement.textContent,
+//     });
+//   }
+// }
 
 function startObserving(tabId) {
   // if domain is not twitter.com, return
@@ -34,13 +46,23 @@ function startObserving(tabId) {
         const elements = document.querySelectorAll('[data-testid="tweetText"]');
 
         const tweets = Array.from(elements).map((element) => {
-          return { id: element.id, text: element.textContent };
+          // look for parent element tweet to grab full context
+          let parentElement = element.parentNode;
+          while (parentElement) {
+            if (parentElement.getAttribute("data-testid") === "tweet") {
+              return { id: element.id, text: parentElement.textContent };
+            }
+            parentElement = parentElement.parentNode;
+          }
         });
+
+        const contextElement = document.querySelector('[tabindex="-1"]');
 
         if (tweets.length > 0) {
           chrome.runtime.sendMessage({
             fetchFilter: true,
             tweets,
+            context: contextElement.textContent,
           });
         }
       }
@@ -247,16 +269,29 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   });
 });
 
-// set the badge text to the number of tweets
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.fetchFilter) {
+// set the badge text to the number of hidden tweets
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  if (changes.filteredTweets) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-      chrome.action.setBadgeText({ text: request.tweets.length.toString() });
+      chrome.action.setBadgeText({
+        text: changes.filteredTweets
+          .filter((tweet) => tweet.hide)
+          .length.toString(),
+      });
     });
-
-    console.log("executing script");
   }
 });
+
+// set the badge text to the number of tweets
+// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+//   if (request.fetchFilter) {
+//     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
+//       chrome.action.setBadgeText({ text: request.tweets.length.toString() });
+//     });
+
+//     console.log("executing script");
+//   }
+// });
 
 // Store the texts in local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {

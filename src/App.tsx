@@ -169,6 +169,11 @@ function App() {
     chrome.storage.local.get(["filteredTweets"], function (result) {
       setFilteredTweets(result.filteredTweets);
     });
+    chrome.storage.onChanged.addListener(function (changes, namespace) {
+      if (changes.filteredTweets) {
+        setFilteredTweets(changes.filteredTweets.newValue);
+      }
+    });
   }, []);
 
   useEffect(() => {
