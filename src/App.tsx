@@ -25,6 +25,7 @@ import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import useLocalStorageState from "./hooks/useLocalStorageState";
+import { Delete, Remove } from "@mui/icons-material";
 
 interface Tweet {
   text: string;
@@ -35,6 +36,13 @@ interface FilteredTweet {
   tweet: Tweet;
   hide: boolean;
 }
+
+interface Settings {
+  blur: boolean;
+  autoHide: boolean;
+}
+
+const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 
 function TabPanel(props: any) {
   const { children, value, index, ...other } = props;
@@ -57,59 +65,127 @@ function TabPanel(props: any) {
 // use chrome.storage.local
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
-
-  const [foundTweets, setFoundTweets] = useState([] as Tweet[]);
+  const [darkMode, setDarkMode] = useLocalStorageState("darkMode", false);
   const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
-
-  const [filterOn, setFilterOn] = useState(true);
-
-  const [promptText, setPromptText] = useLocalStorageState(
-    "prompt",
-    "Remove all negative sounding tweets"
-  );
-
+  const [currentDomain, setCurrentDomain] = useState("");
+  const [disabled, setDisabled] = useLocalStorageState("disabled", false);
   const [newPrompt, setNewPrompt] = useState("");
+  const [filterConfig, setFilterConfig] = useLocalStorageState("filterConfig", {
+    defaults: defaultFilterKeys,
+    custom: [
+      {
+        text: "remove all negative sounding tweets",
+        active: true,
+      },
+    ],
+  });
 
-  useEffect(() => {
-    setNewPrompt(promptText);
-  }, [promptText]);
+  const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
+    blur: false,
+    autoHide: true,
+  });
 
-  useEffect(() => {
-    // Retrieve the texts from local storage
-    chrome.storage.local.get(["filteredTweets"], function (result) {
-      setFoundTweets(result.filteredTweets);
-    });
-  }, []);
+  // const [count, setCount] = useState(0);
 
-  const handleSavePrompt = () => {
-    setPromptText(newPrompt);
+  // useEffect(() => {
+  //   setCount(count + 1);
+  // }, [filterConfig]);
+
+  const isSettingsChecked = (key: keyof Settings) => {
+    return settings[key];
   };
 
-  const handleFilterTweets = async () => {
-    try {
-      const { data } = await axios.post("http://localhost:3000/api/filter", {
-        tweets: foundTweets,
-        prompt: promptText,
-      });
+  const isChecked = (key: string) => {
+    return filterConfig.defaults.includes(key);
+  };
 
-      setFilteredTweets(data.filteredTweets);
+  const isCustomChecked = (index: number) => {
+    return filterConfig.custom[index]?.active;
+  };
 
-      chrome.runtime.sendMessage({
-        executeFilter: true,
-        filteredTweets: data.filteredTweets,
-      });
-    } catch (error) {
-      alert(error);
-      console.error(error);
+  const handleCheck = (key: string) => (e: any) => {
+    if (e.target.checked) {
+      setFilterConfig((prev) => ({
+        ...prev,
+        defaults: [...prev.defaults, key],
+      }));
+    } else {
+      setFilterConfig((prev) => ({
+        ...prev,
+        defaults: prev.defaults.filter((item) => item !== key),
+      }));
     }
   };
+
+  const handleCheckCustom = (index: number) => (e: any) => {
+    if (e.target.checked) {
+      setFilterConfig((prev) => ({
+        ...prev,
+        custom: prev.custom.map((item, i) =>
+          i === index ? { ...item, active: true } : item
+        ),
+      }));
+    } else {
+      setFilterConfig((prev) => ({
+        ...prev,
+        custom: prev.custom.map((item, i) =>
+          i === index ? { ...item, active: false } : item
+        ),
+      }));
+    }
+  };
+
+  const handleRemoveCustom = (index: number) => {
+    setFilterConfig((prev) => ({
+      ...prev,
+      custom: prev.custom.filter((item, i) => i !== index),
+    }));
+  };
+
+  const handleSavePrompt = () => {
+    setFilterConfig((prev) => ({
+      ...prev,
+      custom: [
+        ...prev.custom,
+        {
+          text: newPrompt,
+          active: true,
+        },
+      ],
+    }));
+    setNewPrompt("");
+  };
+
+  useEffect(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0].url) return;
+      const url = new URL(tabs[0].url);
+      const domain = url.hostname;
+      setCurrentDomain(domain);
+    });
+  }, []);
 
   useEffect(() => {
     chrome.storage.local.get(["filteredTweets"], function (result) {
       setFilteredTweets(result.filteredTweets);
     });
+    chrome.storage.onChanged.addListener(function (changes, namespace) {
+      if (changes.filteredTweets) {
+        setFilteredTweets(changes.filteredTweets.newValue);
+      }
+    });
   }, []);
+
+  useEffect(() => {
+    // send message to content script
+    chrome.runtime.sendMessage({
+      grabAndFilter: true,
+    });
+  }, [filterConfig]);
+
+  const clearCache = () => {
+    chrome.storage.local.clear();
+  };
 
   const [activeTab, setActiveTab] = useState(0);
 
@@ -124,37 +200,52 @@ function App() {
           borderRadius: 2,
         }}
       >
+        {/* {count} */}
         <Stack
           direction={"row"}
           spacing={2}
-          justifyContent={"flex-end"}
+          justifyContent={"space-between"}
           sx={{
             m: 1,
           }}
+          alignItems={"center"}
         >
+          <Typography variant="subtitle2">
+            <>{currentDomain}</>
+          </Typography>
           <IconButton onClick={() => setDarkMode((prev) => !prev)}>
             <LightModeIcon />
           </IconButton>
         </Stack>
-        <Typography
-          sx={{
-            mt: 1,
-          }}
-          variant="h5"
-          align="center"
+        <Stack
+          direction={"row"}
+          alignItems={"center"}
+          justifyContent={"center"}
+          spacing={0}
         >
-          Content Filter GPT
-        </Typography>
-        <Stack direction={"row"} spacing={2} justifyContent={"center"}>
-          <IconButton size="large" onClick={() => setFilterOn((prev) => !prev)}>
-            {filterOn ? (
-              <FilterAltIcon fontSize="large" />
+          <IconButton size="large" onClick={() => setDisabled((prev) => !prev)}>
+            {!disabled ? (
+              <FilterAltIcon
+                sx={{
+                  fontSize: 50,
+                }}
+              />
             ) : (
-              <FilterAltOffIcon fontSize="large" />
+              <FilterAltOffIcon
+                sx={{
+                  fontSize: 50,
+                }}
+              />
             )}
           </IconButton>
+          <Typography variant="h3">
+            <strong>Sift</strong>
+          </Typography>
         </Stack>
-
+        <Typography variant="subtitle2" align="center">
+          Filter the internet
+        </Typography>
+        <Stack direction={"row"} spacing={2} justifyContent={"center"}></Stack>
         <Stack direction={"row"} spacing={2} justifyContent={"center"}>
           <Tabs value={activeTab} onChange={(e, value) => setActiveTab(value)}>
             <Tab label="Filters" />
@@ -162,7 +253,6 @@ function App() {
             <Tab label="Settings" />
           </Tabs>
         </Stack>
-
         <TabPanel value={activeTab} index={0}>
           <FormControl
             sx={{
@@ -171,30 +261,56 @@ function App() {
           >
             <FormLabel>Remove:</FormLabel>
             <FormGroup>
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Spam"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Politics"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Rants"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={true} />}
-                label="Racism"
-              />
+              {defaultFilterKeys.map((key) => (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isChecked(key)}
+                      onChange={handleCheck(key)}
+                    />
+                  }
+                  label={key}
+                />
+              ))}
             </FormGroup>
           </FormControl>
+
+          <Divider />
+          <FormControl
+            sx={{
+              m: 1,
+            }}
+          >
+            <FormLabel>Your Filters: </FormLabel>
+            {filterConfig.custom.map((item, i) => (
+              <Stack
+                direction={"row"}
+                spacing={1}
+                justifyContent={"space-between"}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isCustomChecked(i)}
+                      onChange={handleCheckCustom(i)}
+                    />
+                  }
+                  label={item.text}
+                />
+                <IconButton onClick={() => handleRemoveCustom(i)}>
+                  <Delete />
+                </IconButton>
+              </Stack>
+            ))}
+          </FormControl>
+
           <Stack
             alignItems={"center"}
             sx={{
               m: 1,
             }}
           >
+            <Typography gutterBottom>Add Custom Filter</Typography>
             <TextField
               fullWidth
               minRows={2}
@@ -204,7 +320,7 @@ function App() {
               value={newPrompt}
               onChange={(e) => setNewPrompt(e.target.value)}
             />
-            <Button onClick={handleSavePrompt}>Save Prompt</Button>
+            <Button onClick={handleSavePrompt}>Save</Button>
           </Stack>
         </TabPanel>
         <TabPanel value={activeTab} index={1}>
@@ -243,6 +359,9 @@ function App() {
                 control={<Checkbox checked={true} />}
                 label="Auto Hide"
               />
+              <Button variant="outlined" color="error" onClick={clearCache}>
+                Reset Cache
+              </Button>
             </FormGroup>
           </FormControl>
         </TabPanel>

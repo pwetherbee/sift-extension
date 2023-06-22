@@ -19,6 +19,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.3",
     "html-webpack-plugin": "^5.5.0",
+    "lodash.isequal": "^4.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
@@ -30,6 +31,7 @@
     "watch": "webpack -w --config webpack.config.js"
   },
   "devDependencies": {
+    "@types/lodash.isequal": "^4.5.6",
     "ts-loader": "^9.4.2",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"

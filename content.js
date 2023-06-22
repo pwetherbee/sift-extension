@@ -5,38 +5,48 @@ chrome.runtime.sendMessage({
 
 window.removeElements = function (filteredTweets) {
   filteredTweets.forEach((item) => {
-    if (item.hide) {
-      const elementId = item.tweet.id;
-      const element = document.getElementById(elementId);
+    const elementId = item.tweet.id;
+    const element = document.getElementById(elementId);
+    // if (!element) return console.log("no element found for id:", elementId);
+    // console.log(element);
+    // element.style.display = item.hide ? "none" : "block";
 
-      if (!element) return;
+    if (!element) return;
 
-      let parentElement = element.parentNode;
+    let parentElement = element.parentNode;
 
-      while (parentElement) {
-        if (parentElement.getAttribute("data-testid") === "tweet") {
-          // parentElement.removeChild()
-          parentElement.style.display = "none";
-          // parentElement.style.filter = 'blur(5px)';
-          break;
-        }
-        parentElement = parentElement.parentNode;
+    while (parentElement) {
+      if (parentElement.getAttribute("data-testid") === "cellInnerDiv") {
+        //or tweet
+        // parentElement.removeChild()
+        parentElement.style.display = item.hide ? "none" : "block";
+        // parentElement.style.filter = 'blur(5px)';
+        break;
       }
+      parentElement = parentElement.parentNode;
     }
   });
 };
 
 window.grabAndFilter = function () {
-  const elements = document.querySelectorAll('[data-testid="tweetText"]');
-
   const tweets = Array.from(elements).map((element) => {
-    return { id: element.id, text: element.textContent };
+    // look for parent element tweet to grab full context
+    let parentElement = element.parentNode;
+    while (parentElement) {
+      if (parentElement.getAttribute("data-testid") === "tweet") {
+        return { id: element.id, text: element.textContent };
+      }
+      parentElement = parentElement.parentNode;
+    }
   });
+
+  const contextElement = document.querySelector('[tabindex="-1"]');
 
   if (tweets.length > 0) {
     chrome.runtime.sendMessage({
       fetchFilter: true,
       tweets,
+      context: contextElement.textContent,
     });
   }
 };

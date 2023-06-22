@@ -1,45 +1,81 @@
 let controller = new AbortController();
 
-function grabAndFilter() {
-  const elements = document.querySelectorAll('[data-testid="tweetText"]');
+// function grabAndFilter() {
+//   // only tweetText has a unique id
+//   const elements = document.querySelectorAll('[data-testid="tweetText"]');
+//   t;
 
-  const tweets = Array.from(elements).map((element) => {
-    return { id: element.id, text: element.textContent };
-  });
+//   const tweets = Array.from(elements).map((element) => {
+//     // look for parent element tweet to grab full context
+//     let parentElement = element.parentNode;
+//     while (parentElement) {
+//       if (parentElement.getAttribute("data-testid") === "tweet") {
+//         return { id: element.id, text: element.textContent };
+//       }
+//       parentElement = parentElement.parentNode;
+//     }
+//   });
 
-  if (tweets.length > 0) {
-    chrome.runtime.sendMessage({
-      fetchFilter: true,
-      tweets,
-    });
-  }
-}
+//   const contextElement = document.querySelector('[tabindex="-1"]');
+
+//   if (tweets.length > 0) {
+//     chrome.runtime.sendMessage({
+//       fetchFilter: true,
+//       tweets,
+//       context: contextElement.textContent,
+//     });
+//   }
+// }
 
 function startObserving(tabId) {
   // if domain is not twitter.com, return
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
+      function debounceHandler(func, delay) {
+        let debounceTimer;
+        return function () {
+          const context = this;
+          const args = arguments;
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => func.apply(context, args), delay);
+        };
+      }
+
       function grabAndFilter() {
         const elements = document.querySelectorAll('[data-testid="tweetText"]');
 
         const tweets = Array.from(elements).map((element) => {
-          return { id: element.id, text: element.textContent };
+          // look for parent element tweet to grab full context
+          let parentElement = element.parentNode;
+          while (parentElement) {
+            if (parentElement.getAttribute("data-testid") === "tweet") {
+              return { id: element.id, text: parentElement.textContent };
+            }
+            parentElement = parentElement.parentNode;
+          }
         });
+
+        const contextElement = document.querySelector('[tabindex="-1"]');
 
         if (tweets.length > 0) {
           chrome.runtime.sendMessage({
             fetchFilter: true,
             tweets,
+            context: contextElement.textContent,
           });
         }
       }
+
+      // Apply debounce to grabAndFilter function
+      const debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);
+
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
-            grabAndFilter();
+            debouncedGrabAndFilter();
           }
         });
       });
@@ -59,7 +95,7 @@ function startObserving(tabId) {
   });
 }
 
-async function queryFilter(prompt, tweets) {
+async function queryFilter(filters, tweets) {
   const res = await fetch("http://localhost:3000/api/filter", {
     method: "POST",
     headers: {
@@ -68,7 +104,7 @@ async function queryFilter(prompt, tweets) {
     },
     body: JSON.stringify({
       tweets,
-      prompt: prompt || "remove all negative sounding tweets",
+      filters,
     }),
     // signal: controller.signal,
   });
@@ -97,11 +133,15 @@ function debouncedFetch(tweets) {
         try {
           console.log("fetching data");
           const result = await chrome.storage.local.get("prompt");
-          const promptText = result.prompt;
+          const filterConfig = await chrome.storage.local.get("filterConfig");
 
-          const filteredTweets = await queryFilter(promptText, tweets);
+          const filteredTweets = await queryFilter(filterConfig, tweets);
 
           chrome.storage.local.set({ filteredTweets });
+
+          if (!filteredTweets) {
+            return;
+          }
 
           chrome.tabs.query(
             { active: true, currentWindow: true },
@@ -133,7 +173,7 @@ function debouncedFetch(tweets) {
   });
 }
 
-// Execute debounced fetch request
+// Execute debounced fetch request to filter api
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
     debouncedFetch(request.tweets);
@@ -159,7 +199,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 // Start the observer when the tab is updated
-
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {
     // Check the URL of the updated tab
@@ -174,11 +213,20 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   }
 });
 
+// get current tab
+// async function getCurrentTab() {
+//   let queryOptions = { active: true, lastFocusedWindow: true };
+//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
+//   let [tab] = await chrome.tabs.query(queryOptions);
+//   return tab;
+// }
+
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     for (let key in changes) {
       let storageChange = changes[key];
-      if (key === "prompt" && namespace === "local") {
+      if (key === "filterConfig" && namespace === "local") {
+        console.warn("filter config changed");
         // Check if the value has actually changed
         if (storageChange.oldValue !== storageChange.newValue) {
           // Your prompt has changed, trigger the function
@@ -189,11 +237,31 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
+// async function getCurrentTab() {
+//   let queryOptions = { active: true, lastFocusedWindow: true };
+//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
+//   let [tab] = await chrome.tabs.query(queryOptions);
+//   return tab;
+// }
+
+// // receive the grabAndFilter message
+// chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+//   if (request.action === "grabAndFilter") {
+//     const tab = await getCurrentTab();
+//     chrome.scripting.executeScript({
+//       target: { tabId: tab.id },
+//       func: () => {
+//         grabAndFilter();
+//       },
+//     });
+//   }
+// });
+
+// Stop observing when the tab is closed
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      // Stop observing when the tab is closed
       if (window.observer) {
         window.observer.disconnect();
       }
@@ -201,19 +269,33 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   });
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.fetchFilter) {
+// set the badge text to the number of hidden tweets
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  if (changes.filteredTweets) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-      chrome.action.setBadgeText({ text: request.tweets.length.toString() });
+      chrome.action.setBadgeText({
+        text: changes.filteredTweets
+          .filter((tweet) => tweet.hide)
+          .length.toString(),
+      });
     });
-
-    console.log("executing script");
   }
 });
 
+// set the badge text to the number of tweets
+// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+//   if (request.fetchFilter) {
+//     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
+//       chrome.action.setBadgeText({ text: request.tweets.length.toString() });
+//     });
+
+//     console.log("executing script");
+//   }
+// });
+
+// Store the texts in local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
-    // Store the texts in local storage
     chrome.storage.local.set({ tweets: request.tweets }, function () {});
   }
 });
