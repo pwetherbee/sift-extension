@@ -48,6 +48,10 @@ function startObserving(tabId) {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
             // If new nodes are added, check for new tweets
+            // send message to content script to grab and filter
+            // chrome.runtime.sendMessage({
+            //   action: "grabAndFilter",
+            // });
             debouncedGrabAndFilter();
           }
         });
@@ -91,59 +95,58 @@ async function queryFilter(filters, tweets) {
   return data.filteredTweets;
 }
 
-function debouncedFetch(tweets) {
-  chrome.storage.local.get(["lastCallTime"], function (result) {
-    const lastCallTime = result.lastCallTime || 0;
-    const now = Date.now();
+let lastCallTime = 0;
 
-    if (now - lastCallTime >= 1000) {
-      chrome.storage.local.set({ lastCallTime: now });
-      console.log("fetching api");
+async function debouncedFetch(tweets) {
+  const now = Date.now();
 
-      // Put your fetch call here inside setTimeout,
-      // so it's delayed by 1000 milliseconds
-      setTimeout(async () => {
-        try {
-          console.log("fetching data");
-          const result = await chrome.storage.local.get("prompt");
-          const filterConfig = await chrome.storage.local.get("filterConfig");
+  if (now - lastCallTime >= 5000) {
+    lastCallTime = now;
+    console.log("fetching api");
 
-          const filteredTweets = await queryFilter(filterConfig, tweets);
+    // Put your fetch call here inside setTimeout,
+    // so it's delayed by 1000 milliseconds
+    setTimeout(async () => {
+      try {
+        console.log("fetching data");
+        const result = await chrome.storage.local.get("prompt");
+        const filterConfig = await chrome.storage.local.get("filterConfig");
 
-          chrome.storage.local.set({ filteredTweets });
+        const filteredTweets = await queryFilter(filterConfig, tweets);
 
-          if (!filteredTweets) {
-            return;
-          }
+        chrome.storage.local.set({ filteredTweets });
 
-          chrome.tabs.query(
-            { active: true, currentWindow: true },
-            function (tabs) {
-              chrome.scripting.executeScript({
-                target: { tabId: tabs[0].id },
-                func: (data) => {
-                  // We'll implement this function in the content script
-                  window.removeElements(data);
-                },
-                args: [filteredTweets],
-              });
-            }
-          );
-
-          console.log("sent message");
-        } catch (error) {
-          if (error.name === "AbortError") {
-            console.log("Fetch operation aborted");
-          } else {
-            console.error("error incoming");
-            console.error(error);
-          }
+        if (!filteredTweets) {
+          return;
         }
-      }, 1000);
-    } else {
-      console.log("Skipping fetch due to rate limit");
-    }
-  });
+
+        chrome.tabs.query(
+          { active: true, currentWindow: true },
+          function (tabs) {
+            chrome.scripting.executeScript({
+              target: { tabId: tabs[0].id },
+              func: (data) => {
+                // We'll implement this function in the content script
+                window.removeElements(data);
+              },
+              args: [filteredTweets],
+            });
+          }
+        );
+
+        console.log("sent message");
+      } catch (error) {
+        if (error.name === "AbortError") {
+          console.log("Fetch operation aborted");
+        } else {
+          console.error("error incoming");
+          console.error(error);
+        }
+      }
+    }, 1000);
+  } else {
+    console.log("Skipping fetch due to rate limit");
+  }
 }
 
 // Execute debounced fetch request to filter api

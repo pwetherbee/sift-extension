@@ -53,6 +53,7 @@ window.grabAndFilter = function () {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "grabAndFilter") {
+    console.log("first grab and filter");
     window.grabAndFilter();
   }
 });
