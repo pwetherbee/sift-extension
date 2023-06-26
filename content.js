@@ -19,7 +19,18 @@ window.removeElements = function (filteredTweets) {
       if (parentElement.getAttribute("data-testid") === "cellInnerDiv") {
         //or tweet
         // parentElement.removeChild()
-        parentElement.style.display = item.hide ? "none" : "block";
+        // parentElement.style.display = item.hide ? "none" : "block";
+        if (parentElement.getAttribute("data-filtered")) return;
+        parentElement.style.filter = item.hide ? "blur(5px)" : "";
+
+        // add event listener to parent element to remove blur on click
+        parentElement.addEventListener("click", (e) => {
+          e.stopPropagation();
+          parentElement.style.filter = "";
+          // add property to item to prevent it from being filtered again
+          parentElement.setAttribute("data-filtered", true);
+        });
+
         // parentElement.style.filter = 'blur(5px)';
         break;
       }
