@@ -26,21 +26,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import useLocalStorageState from "./hooks/useLocalStorageState";
 import { Delete, Remove } from "@mui/icons-material";
-
-interface TextItem {
-  text: string;
-  id: string;
-}
-
-interface FilteredTextItem {
-  textItem: TextItem;
-  hide: boolean;
-}
-
-interface Settings {
-  blur: boolean;
-  autoHide: boolean;
-}
+import { FilteredTextItem } from "./types/TextItem";
+import { Settings } from "./types/Settings";
 
 const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 

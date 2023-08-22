@@ -19,7 +19,7 @@
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/js/background.js"
   },
   "host_permissions": ["*://*.twitter.com/*"]
 }
