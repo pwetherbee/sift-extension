@@ -18,7 +18,7 @@ function startObserving(tabId) {
       function grabAndFilter() {
         const elements = document.querySelectorAll('[data-testid="tweetText"]');
 
-        const tweets = Array.from(elements).map((element) => {
+        const textItems = Array.from(elements).map((element) => {
           // look for parent element tweet to grab full context
           let parentElement = element.parentNode;
           while (parentElement) {
@@ -31,10 +31,10 @@ function startObserving(tabId) {
 
         const contextElement = document.querySelector('[tabindex="-1"]');
 
-        if (tweets.length > 0) {
+        if (textItems.length > 0) {
           chrome.runtime.sendMessage({
             fetchFilter: true,
-            tweets,
+            textItems,
             context: contextElement.textContent,
           });
         }
@@ -47,7 +47,7 @@ function startObserving(tabId) {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-            // If new nodes are added, check for new tweets
+            // If new nodes are added, check for new text items
             // send message to content script to grab and filter
             // chrome.runtime.sendMessage({
             //   action: "grabAndFilter",
@@ -72,7 +72,7 @@ function startObserving(tabId) {
   });
 }
 
-async function queryFilter(filters, tweets) {
+async function queryFilter(filters, textItems) {
   const res = await fetch("http://localhost:3000/api/filter", {
     method: "POST",
     headers: {
@@ -80,7 +80,7 @@ async function queryFilter(filters, tweets) {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      tweets,
+      textItems,
       filters,
     }),
     // signal: controller.signal,
@@ -92,12 +92,12 @@ async function queryFilter(filters, tweets) {
     console.error("Error in response");
     return;
   }
-  return data.filteredTweets;
+  return data.filteredTextItems;
 }
 
 let lastCallTime = 0;
 
-async function debouncedFetch(tweets) {
+async function debouncedFetch(textItems) {
   const now = Date.now();
 
   if (now - lastCallTime >= 5000) {
@@ -112,11 +112,11 @@ async function debouncedFetch(tweets) {
         const result = await chrome.storage.local.get("prompt");
         const filterConfig = await chrome.storage.local.get("filterConfig");
 
-        const filteredTweets = await queryFilter(filterConfig, tweets);
+        const filteredTextItems = await queryFilter(filterConfig, textItems);
 
-        chrome.storage.local.set({ filteredTweets });
+        chrome.storage.local.set({ filteredTextItems });
 
-        if (!filteredTweets) {
+        if (!filteredTextItems) {
           return;
         }
 
@@ -129,7 +129,7 @@ async function debouncedFetch(tweets) {
                 // We'll implement this function in the content script
                 window.removeElements(data);
               },
-              args: [filteredTweets],
+              args: [filteredTextItems],
             });
           }
         );
@@ -152,7 +152,7 @@ async function debouncedFetch(tweets) {
 // Execute debounced fetch request to filter api
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
-    debouncedFetch(request.tweets);
+    debouncedFetch(request.textItems);
   }
   return true;
 });
@@ -168,7 +168,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           // We'll implement this function in the content script
           window.removeElements(data);
         },
-        args: [request.filteredTweets],
+        args: [request.filteredTextItems],
       });
     });
   }
@@ -245,24 +245,24 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   });
 });
 
-// set the badge text to the number of hidden tweets
+// set the badge text to the number of hidden text items
 chrome.storage.onChanged.addListener(function (changes, namespace) {
-  if (changes.filteredTweets) {
+  if (changes.filteredTextItems) {
     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
       chrome.action.setBadgeText({
-        text: changes.filteredTweets
-          .filter((tweet) => tweet.hide)
+        text: changes.filteredTextItems
+          .filter((textItem) => textItem.hide)
           .length.toString(),
       });
     });
   }
 });
 
-// set the badge text to the number of tweets
+// set the badge text to the number of textItems
 // chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 //   if (request.fetchFilter) {
 //     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-//       chrome.action.setBadgeText({ text: request.tweets.length.toString() });
+//       chrome.action.setBadgeText({ text: request.textItems.length.toString() });
 //     });
 
 //     console.log("executing script");
@@ -272,6 +272,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 // Store the texts in local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
-    chrome.storage.local.set({ tweets: request.tweets }, function () {});
+    chrome.storage.local.set({ textItems: request.textItems }, function () {});
   }
 });

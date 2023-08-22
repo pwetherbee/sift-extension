@@ -27,13 +27,13 @@ import axios from "axios";
 import useLocalStorageState from "./hooks/useLocalStorageState";
 import { Delete, Remove } from "@mui/icons-material";
 
-interface Tweet {
+interface TextItem {
   text: string;
   id: string;
 }
 
-interface FilteredTweet {
-  tweet: Tweet;
+interface FilteredTextItem {
+  textItem: TextItem;
   hide: boolean;
 }
 
@@ -66,7 +66,9 @@ function TabPanel(props: any) {
 
 function App() {
   const [darkMode, setDarkMode] = useLocalStorageState("darkMode", false);
-  const [filteredTweets, setFilteredTweets] = useState([] as FilteredTweet[]);
+  const [filteredTextItems, setFilteredTextItems] = useState(
+    [] as FilteredTextItem[]
+  );
   const [currentDomain, setCurrentDomain] = useState("");
   const [disabled, setDisabled] = useLocalStorageState("disabled", false);
   const [newPrompt, setNewPrompt] = useState("");
@@ -74,7 +76,7 @@ function App() {
     defaults: defaultFilterKeys,
     custom: [
       {
-        text: "remove all negative sounding tweets",
+        text: "remove all negative sounding posts",
         active: true,
       },
     ],
@@ -166,12 +168,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    chrome.storage.local.get(["filteredTweets"], function (result) {
-      setFilteredTweets(result.filteredTweets);
+    chrome.storage.local.get(["filteredTextItems"], function (result) {
+      setFilteredTextItems(result.filteredTextItems);
     });
     chrome.storage.onChanged.addListener(function (changes, namespace) {
-      if (changes.filteredTweets) {
-        setFilteredTweets(changes.filteredTweets.newValue);
+      if (changes.filteredTextItems) {
+        setFilteredTextItems(changes.filteredTextItems.newValue);
       }
     });
   }, []);
@@ -325,18 +327,18 @@ function App() {
         </TabPanel>
         <TabPanel value={activeTab} index={1}>
           <Typography align="center" variant="h5">
-            Filtered Tweets
+            Filtered Text Items
           </Typography>
 
           <Typography align="center" variant="subtitle1">
-            Removed {filteredTweets?.filter((item) => item.hide).length}{" "}
+            Removed {filteredTextItems?.filter((item) => item.hide).length}{" "}
           </Typography>
 
-          {filteredTweets
+          {filteredTextItems
             ?.filter((item) => item.hide)
             .map((item) => (
               <Paper sx={{ p: 2, m: 1 }}>
-                <Typography variant="body2">{item.tweet.text}</Typography>
+                <Typography variant="body2">{item.textItem.text}</Typography>
                 <Typography variant="body2">
                   {item.hide ? "Hidden" : "Shown"}
                 </Typography>

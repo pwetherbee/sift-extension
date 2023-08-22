@@ -3,9 +3,9 @@ chrome.runtime.sendMessage({
   source: document.body.innerText,
 });
 
-window.removeElements = function (filteredTweets) {
-  filteredTweets.forEach((item) => {
-    const elementId = item.tweet.id;
+window.removeElements = function (filteredTextItems) {
+  filteredTextItems.forEach((item) => {
+    const elementId = item.textItem.id;
     const element = document.getElementById(elementId);
     // if (!element) return console.log("no element found for id:", elementId);
     // console.log(element);
@@ -40,7 +40,7 @@ window.removeElements = function (filteredTweets) {
 };
 
 window.grabAndFilter = function () {
-  const tweets = Array.from(elements).map((element) => {
+  const textItems = Array.from(elements).map((element) => {
     // look for parent element tweet to grab full context
     let parentElement = element.parentNode;
     while (parentElement) {
@@ -53,10 +53,10 @@ window.grabAndFilter = function () {
 
   const contextElement = document.querySelector('[tabindex="-1"]');
 
-  if (tweets.length > 0) {
+  if (textItems.length > 0) {
     chrome.runtime.sendMessage({
       fetchFilter: true,
-      tweets,
+      textItems,
       context: contextElement.textContent,
     });
   }
