@@ -152,6 +152,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.grabAndFilter) {
+    console.log("Fetching elements");
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0].id) return;
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => {
+          window.debouncedGrabAndFilter();
+        },
+      });
+    });
+  }
+});
+
 // Start the observer when the tab is updated
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {

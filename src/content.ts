@@ -10,11 +10,6 @@ declare global {
   }
 }
 
-chrome.runtime.sendMessage({
-  action: "getSource",
-  source: document.body.innerText,
-});
-
 function debounceHandler(func: Function, delay: number) {
   let debounceTimer: any;
   return function (this: any) {
@@ -29,7 +24,7 @@ function grabAndFilter() {
   // fetch current domain, such as twitter.com or youtube.com
   const domain = window.location.hostname;
   const contextElement = getContext(domain);
-  const textItems = getTextElements(domain);
+  const textItems = getTextElements(domain).slice(0, 20);
   console.log(textItems);
   if (textItems.length > 0) {
     chrome.runtime.sendMessage({
@@ -82,5 +77,12 @@ window.removeElements = function (filteredTextItems) {
 };
 
 window.debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);
+
+// on message from background script, grab text elements and filter
+
+chrome.runtime.sendMessage({
+  action: "getSource",
+  source: document.body.innerText,
+});
 
 export {};

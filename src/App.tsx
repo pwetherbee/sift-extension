@@ -159,6 +159,13 @@ function App() {
     setNewPrompt("");
   };
 
+  const triggerManualFilter = () => {
+    console.log("sending message to grab & filter");
+    chrome.runtime.sendMessage({
+      grabAndFilter: true,
+    });
+  };
+
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0].url) return;
@@ -372,6 +379,13 @@ function App() {
                 }
                 label="Auto Hide"
               />
+              <Button
+                variant="outlined"
+                color="info"
+                onClick={triggerManualFilter}
+              >
+                Manually Run Filter
+              </Button>
               <Button variant="outlined" color="error" onClick={clearCache}>
                 Reset Cache
               </Button>

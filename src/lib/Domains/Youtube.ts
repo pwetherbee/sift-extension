@@ -1,10 +1,10 @@
 export function getYoutubeContext() {
-  return document.querySelector('[tabindex="-1"]');
+  return document.querySelector("h1");
 }
 
 export function fetchYoutubeComments() {
-  const elements = document.querySelectorAll('[class*="ytd-comment-renderer"]');
+  const elements = document.querySelectorAll("[id=content-text]");
   return Array.from(elements).map((element) => {
-    return element.textContent;
+    return { id: element.id, text: element.textContent };
   });
 }
