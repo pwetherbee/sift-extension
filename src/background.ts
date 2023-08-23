@@ -1,61 +1,31 @@
+import { allowedDomains } from "./lib/AllowedDomains";
 import { FilterPrompt } from "./types/FilterPrompt";
 import { FilteredTextItem, TextItem } from "./types/TextItem";
-
-let controller = new AbortController();
+declare global {
+  interface Window {
+    removeElements: (filteredTextItems: FilteredTextItem[]) => void;
+    grabAndFilter: () => void;
+    debouncedGrabAndFilter: () => void;
+    observer: MutationObserver;
+  }
+}
 
 function startObserving(tabId: number) {
-  // if domain is not twitter.com, return
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      function debounceHandler(func: Function, delay: number) {
-        let debounceTimer: any;
-        return function (this: any) {
-          const context = this;
-          const args = arguments;
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => func.apply(context, args), delay);
-        };
-      }
-
-      function grabAndFilter() {
-        const elements = document.querySelectorAll('[data-testid="tweetText"]');
-
-        const textItems = Array.from(elements).map((element) => {
-          // look for parent element tweet to grab full context
-          let parentElement = element.parentElement;
-          while (parentElement) {
-            if (parentElement.getAttribute("data-testid") === "tweet") {
-              return { id: element.id, text: element.textContent };
-            }
-            parentElement = parentElement.parentElement;
-          }
-        });
-
-        const contextElement = document.querySelector('[tabindex="-1"]');
-
-        if (textItems.length > 0 && contextElement) {
-          chrome.runtime.sendMessage({
-            fetchFilter: true,
-            textItems,
-            context: contextElement.textContent,
-          });
-        }
-      }
-
-      // Apply debounce to grabAndFilter function
-      const debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);
-
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+            // console.log("mutation observed");
             // If new nodes are added, check for new text items
             // send message to content script to grab and filter
             // chrome.runtime.sendMessage({
             //   action: "grabAndFilter",
             // });
-            debouncedGrabAndFilter();
+            // debouncedGrabAndFilter();
+            window.debouncedGrabAndFilter();
           }
         });
       });
@@ -70,7 +40,7 @@ function startObserving(tabId: number) {
       }
 
       // Save observer to window so it can be accessed later for cleanup
-      (window as any).observer = observer;
+      window.observer = observer;
     },
   });
 }
@@ -112,9 +82,7 @@ async function debouncedFetch(textItems: TextItem[]) {
     setTimeout(async () => {
       try {
         console.log("fetching data");
-        const result = await chrome.storage.local.get("prompt");
         const filterConfig = await chrome.storage.local.get("filterConfig");
-
         const filteredTextItems = await queryFilter(
           {
             filterConfig: filterConfig.filterConfig,
@@ -187,12 +155,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 // Start the observer when the tab is updated
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete" && tab.active) {
-    // Check the URL of the updated tab
-    if (!tab.url?.includes("twitter.com")) {
-      return;
+    // Call startObserving only if the URL is in the allowed domains
+
+    // fetch current domain, not entire url, aka www.twitter.com/home -> twitter.com
+
+    const domain = tab.url?.replace("www.", "").split("/")[2];
+
+    console.log(tab.url);
+
+    if (!allowedDomains.includes(domain || "")) {
+      return console.log("not allowed domain");
     }
 
-    // Call startObserving only if the URL is for twitter.com
+    console.log("observer started for domain", domain);
+
     startObserving(tabId);
   } else {
     chrome.action.setBadgeText({ text: "" });
@@ -224,26 +200,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
-// async function getCurrentTab() {
-//   let queryOptions = { active: true, lastFocusedWindow: true };
-//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
-//   let [tab] = await chrome.tabs.query(queryOptions);
-//   return tab;
-// }
-
-// // receive the grabAndFilter message
-// chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-//   if (request.action === "grabAndFilter") {
-//     const tab = await getCurrentTab();
-//     chrome.scripting.executeScript({
-//       target: { tabId: tab.id },
-//       func: () => {
-//         grabAndFilter();
-//       },
-//     });
-//   }
-// });
-
 // Stop observing when the tab is closed
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   chrome.scripting.executeScript({
@@ -268,6 +224,26 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     });
   }
 });
+
+// on page load, run window.debouncedGrabAndFilter();
+// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+//   chrome.scripting.executeScript({
+//     target: { tabId },
+//     func: () => {
+//       if (changeInfo.status === "complete" && tab.active) {
+//         // Call startObserving only if the URL is in the allowed domains
+//         const domain = tab.url?.replace("www.", "").split("/")[2];
+
+//         console.log(tab.url);
+
+//         if (!allowedDomains.includes(domain || "")) {
+//           return console.log("not allowed domain");
+//         }
+//         window.debouncedGrabAndFilter();
+//       }
+//     },
+//   });
+// });
 
 // set the badge text to the number of textItems
 // chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {

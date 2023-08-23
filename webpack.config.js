@@ -6,6 +6,7 @@ module.exports = {
   entry: {
     index: "./src/index.tsx",
     background: path.resolve(__dirname, "src", "background.ts"),
+    content: path.resolve(__dirname, "src", "content.ts"),
   },
   mode: "production",
   module: {

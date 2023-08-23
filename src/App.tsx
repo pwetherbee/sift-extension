@@ -92,6 +92,20 @@ function App() {
     return filterConfig.custom[index]?.active;
   };
 
+  const handleCheckSettings = (key: keyof Settings) => (e: any) => {
+    if (e.target.checked) {
+      setSettings((prev) => ({
+        ...prev,
+        [key]: true,
+      }));
+    } else {
+      setSettings((prev) => ({
+        ...prev,
+        [key]: false,
+      }));
+    }
+  };
+
   const handleCheck = (key: string) => (e: any) => {
     if (e.target.checked) {
       setFilterConfig((prev) => ({
@@ -341,11 +355,21 @@ function App() {
             <FormLabel>Filter Settings</FormLabel>
             <FormGroup>
               <FormControlLabel
-                control={<Checkbox checked={true} />}
+                control={
+                  <Checkbox
+                    checked={settings.blur}
+                    onClick={handleCheckSettings("blur")}
+                  />
+                }
                 label="Blur Items"
               />
               <FormControlLabel
-                control={<Checkbox checked={true} />}
+                control={
+                  <Checkbox
+                    checked={settings.autoHide}
+                    onClick={handleCheckSettings("blur")}
+                  />
+                }
                 label="Auto Hide"
               />
               <Button variant="outlined" color="error" onClick={clearCache}>

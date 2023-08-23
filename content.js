@@ -4,6 +4,10 @@ chrome.runtime.sendMessage({
 });
 
 window.removeElements = function (filteredTextItems) {
+  // fetch current domain, such as twitter.com or youtube.com
+
+  const domain = window.location.hostname;
+
   filteredTextItems.forEach((item) => {
     const elementId = item.textItem.id;
     const element = document.getElementById(elementId);
@@ -40,20 +44,22 @@ window.removeElements = function (filteredTextItems) {
 };
 
 window.grabAndFilter = function () {
+  const elements = document.querySelectorAll('[data-testid="tweetText"]');
+
   const textItems = Array.from(elements).map((element) => {
     // look for parent element tweet to grab full context
-    let parentElement = element.parentNode;
+    let parentElement = element.parentElement;
     while (parentElement) {
       if (parentElement.getAttribute("data-testid") === "tweet") {
         return { id: element.id, text: element.textContent };
       }
-      parentElement = parentElement.parentNode;
+      parentElement = parentElement.parentElement;
     }
   });
 
   const contextElement = document.querySelector('[tabindex="-1"]');
 
-  if (textItems.length > 0) {
+  if (textItems.length > 0 && contextElement) {
     chrome.runtime.sendMessage({
       fetchFilter: true,
       textItems,
