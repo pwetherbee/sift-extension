@@ -15,25 +15,23 @@ function startObserving(tabId: number) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      // if domain is youtube.com, add observer to id="comments"
-
-      // Create a new observer
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-            // debouncedGrabAndFilter();
-          }
-          chrome.runtime.sendMessage({ mutationDetected: true });
-          window.debouncedGrabAndFilter();
-        });
-      });
-
-      // Define the target node and config
       const domain = window.location.hostname;
       const targetNode = getTargetNode(domain);
 
       if (!targetNode)
         return chrome.runtime.sendMessage({ noTargetNode: true });
+      // Create a new observer
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+            // debouncedGrabAndFilter();
+            // chrome.runtime.sendMessage({ mutationDetected: true });
+            window.debouncedGrabAndFilter();
+          }
+        });
+      });
+
+      // Define the target node and config
 
       const config = { childList: true, subtree: true };
 

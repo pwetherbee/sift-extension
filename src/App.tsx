@@ -70,6 +70,7 @@ function App() {
   });
 
   const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
+    on: true,
     blur: false,
     autoHide: true,
   });
@@ -233,8 +234,8 @@ function App() {
           justifyContent={"center"}
           spacing={0}
         >
-          <IconButton size="large" onClick={() => setDisabled((prev) => !prev)}>
-            {!disabled ? (
+          <IconButton size="large" onClick={handleCheckSettings("on")}>
+            {!settings.on ? (
               <FilterAltIcon
                 sx={{
                   fontSize: 50,
