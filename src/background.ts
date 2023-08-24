@@ -21,14 +21,9 @@ function startObserving(tabId: number) {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-            // console.log("mutation observed");
-            // If new nodes are added, check for new text items
-            // send message to content script to grab and filter
-            // chrome.runtime.sendMessage({
-            //   action: "grabAndFilter",
-            // });
             // debouncedGrabAndFilter();
           }
+          chrome.runtime.sendMessage({ mutationDetected: true });
           window.debouncedGrabAndFilter();
         });
       });
@@ -37,7 +32,8 @@ function startObserving(tabId: number) {
       const domain = window.location.hostname;
       const targetNode = getTargetNode(domain);
 
-      if (!targetNode) return console.log("no target node");
+      if (!targetNode)
+        return chrome.runtime.sendMessage({ noTargetNode: true });
 
       const config = { childList: true, subtree: true };
 
@@ -51,6 +47,18 @@ function startObserving(tabId: number) {
     },
   });
 }
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.noTargetNode) {
+    console.log("No target node found");
+  }
+});
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.mutationDetected) {
+    console.log("mutation detected");
+  }
+});
 
 async function queryFilter(filters: FilterPrompt, textItems: TextItem[]) {
   const res = await fetch("http://localhost:3000/api/filter", {
@@ -117,8 +125,6 @@ async function debouncedFetch(textItems: TextItem[]) {
             });
           }
         );
-
-        console.log("sent message");
       } catch (error: any) {
         if (error.name === "AbortError") {
           console.log("Fetch operation aborted");

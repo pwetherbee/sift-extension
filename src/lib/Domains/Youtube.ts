@@ -12,7 +12,11 @@ export function fetchYoutubeComments() {
 }
 
 export function getYoutubeTargetNode() {
-  return document.getElementById("comments");
+  const element = document.getElementById("page-manager");
+  if (!element) {
+    throw new Error("Could not find comments element");
+  }
+  return element;
 }
 
 export function filterYoutubeComment(item: FilteredTextItem, config: any) {
