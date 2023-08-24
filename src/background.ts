@@ -1,4 +1,5 @@
 import { allowedDomains } from "./lib/AllowedDomains";
+import getTargetNode from "./lib/getTargetNode";
 import { FilterPrompt } from "./types/FilterPrompt";
 import { FilteredTextItem, TextItem } from "./types/TextItem";
 declare global {
@@ -14,6 +15,8 @@ function startObserving(tabId: number) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
+      // if domain is youtube.com, add observer to id="comments"
+
       // Create a new observer
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -25,13 +28,17 @@ function startObserving(tabId: number) {
             //   action: "grabAndFilter",
             // });
             // debouncedGrabAndFilter();
-            window.debouncedGrabAndFilter();
           }
+          window.debouncedGrabAndFilter();
         });
       });
 
       // Define the target node and config
-      const targetNode = document.getElementById("react-root");
+      const domain = window.location.hostname;
+      const targetNode = getTargetNode(domain);
+
+      if (!targetNode) return console.log("no target node");
+
       const config = { childList: true, subtree: true };
 
       // Start observing the target node

@@ -1,3 +1,4 @@
+import filterItem from "./lib/filterElement";
 import getContext from "./lib/getContext";
 import getTextElements from "./lib/getTextContent";
 import { FilteredTextItem } from "./types/TextItem";
@@ -52,28 +53,7 @@ window.removeElements = function (filteredTextItems) {
 
   const domain = window.location.hostname;
 
-  filteredTextItems.forEach((item) => {
-    const elementId = item.textItem.id;
-    const element = document.getElementById(elementId);
-    if (!element) return;
-
-    let parentElement = element.parentElement;
-
-    while (parentElement) {
-      if (parentElement.getAttribute("data-testid") === "cellInnerDiv") {
-        if (parentElement.getAttribute("data-filtered")) return;
-        parentElement.style.filter = item.hide ? "blur(5px)" : "";
-        parentElement.addEventListener("click", (e) => {
-          e.stopPropagation();
-          (parentElement as any).style.filter = "";
-          // add property to item to prevent it from being filtered again
-          (parentElement as any).setAttribute("data-filtered", true);
-        });
-        break;
-      }
-      (parentElement as any) = parentElement.parentNode;
-    }
-  });
+  filteredTextItems.forEach((item) => filterItem(item, []));
 };
 
 window.debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);

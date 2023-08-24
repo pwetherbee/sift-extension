@@ -1,3 +1,9 @@
+import { FilteredTextItem } from "@/src/types/TextItem";
+
+export function getTwitterTargetNode() {
+  return document.getElementById("react-root");
+}
+
 export function getTwitterContext() {
   return document.querySelector('[tabindex="-1"]');
 }
@@ -13,4 +19,27 @@ export function fetchTweets() {
       parentElement = parentElement.parentElement;
     }
   });
+}
+
+export function filterTweet(item: FilteredTextItem, config: any) {
+  const elementId = item.textItem.id;
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  let parentElement = element.parentElement;
+
+  while (parentElement) {
+    if (parentElement.getAttribute("data-testid") === "cellInnerDiv") {
+      if (parentElement.getAttribute("data-filtered")) return;
+      parentElement.style.filter = item.hide ? "blur(5px)" : "";
+      parentElement.addEventListener("click", (e) => {
+        e.stopPropagation();
+        (parentElement as any).style.filter = "";
+        // add property to item to prevent it from being filtered again
+        (parentElement as any).setAttribute("data-filtered", true);
+      });
+      break;
+    }
+    (parentElement as any) = parentElement.parentNode;
+  }
 }
