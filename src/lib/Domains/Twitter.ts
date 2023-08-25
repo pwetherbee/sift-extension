@@ -1,3 +1,4 @@
+import { RemovalConfig } from "@/src/types/RemovalConfig";
 import { FilteredTextItem } from "@/src/types/TextItem";
 
 export function getTwitterTargetNode() {
@@ -21,7 +22,7 @@ export function fetchTweets() {
   });
 }
 
-export function filterTweet(item: FilteredTextItem, config: any) {
+export function filterTweet(item: FilteredTextItem, config: RemovalConfig) {
   const elementId = item.textItem.id;
   const element = document.getElementById(elementId);
   if (!element) return;

@@ -53,7 +53,11 @@ window.removeElements = function (filteredTextItems) {
 
   const domain = window.location.hostname;
 
-  filteredTextItems.forEach((item) => filterItem(item, []));
+  filteredTextItems.forEach((item) =>
+    filterItem(item, {
+      hideStyle: "blur",
+    })
+  );
 };
 
 window.debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);

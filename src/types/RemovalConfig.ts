@@ -1,5 +1,3 @@
 export interface RemovalConfig {
-  removalConfig: {
-    strategy: "remove" | "blur";
-  };
+  hideStyle: "remove" | "blur";
 }

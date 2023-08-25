@@ -1,3 +1,4 @@
+import { RemovalConfig } from "../types/RemovalConfig";
 import { FilteredTextItem } from "../types/TextItem";
 import { filterTweet } from "./Domains/Twitter";
 import { filterYoutubeComment } from "./Domains/Youtube";
@@ -5,7 +6,7 @@ import getDomain from "./getDomain";
 
 export default function filterItem(
   item: FilteredTextItem,
-  filterConfig: string[]
+  filterConfig: RemovalConfig
 ) {
   const domain = getDomain();
   switch (domain) {
