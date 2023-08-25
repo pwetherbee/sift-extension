@@ -1,5 +1,11 @@
+import { DomainInfo } from "@/src/types/DomainInfo";
 import { RemovalConfig } from "@/src/types/RemovalConfig";
 import { FilteredTextItem } from "@/src/types/TextItem";
+
+export const TwitterInfo: DomainInfo = {
+  domain: "twitter.com",
+  contextPrompt: "Filter Tweets",
+};
 
 export function getTwitterTargetNode() {
   return document.getElementById("react-root");

@@ -1,7 +1,8 @@
 import { allowedDomains } from "./lib/AllowedDomains";
-import getTargetNode from "./lib/getTargetNode";
-import { FilterPrompt } from "./types/FilterPrompt";
+import { debouncedFetch } from "./lib/api";
+import { startObserving } from "./lib/observation";
 import { FilteredTextItem, TextItem } from "./types/TextItem";
+
 declare global {
   interface Window {
     removeElements: (filteredTextItems: FilteredTextItem[]) => void;
@@ -11,131 +12,35 @@ declare global {
   }
 }
 
-function startObserving(tabId: number) {
+// Start the observer when the tab is updated
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  if (changeInfo.status === "complete" && tab.active) {
+    // fetch current domain, not entire url
+    const domain = tab.url?.replace("www.", "").split("/")[2];
+
+    if (!allowedDomains.includes(domain || "")) {
+      return console.log("not allowed domain");
+    }
+
+    console.log("observer started for domain", domain);
+
+    startObserving(tabId);
+  } else {
+    chrome.action.setBadgeText({ text: "" });
+  }
+});
+
+// Stop observing when the tab is closed
+chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
   chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      const domain = window.location.hostname;
-      const targetNode = getTargetNode(domain);
-
-      if (!targetNode)
-        return chrome.runtime.sendMessage({ noTargetNode: true });
-      // Create a new observer
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-            // debouncedGrabAndFilter();
-            // chrome.runtime.sendMessage({ mutationDetected: true });
-            window.debouncedGrabAndFilter();
-          }
-        });
-      });
-
-      // Define the target node and config
-
-      const config = { childList: true, subtree: true };
-
-      // Start observing the target node
-      if (targetNode) {
-        observer.observe(targetNode, config);
+      if ((window as any).observer) {
+        (window as any).observer.disconnect();
       }
-
-      // Save observer to window so it can be accessed later for cleanup
-      window.observer = observer;
     },
   });
-}
-
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.noTargetNode) {
-    console.log("No target node found");
-  }
 });
-
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.mutationDetected) {
-    console.log("mutation detected");
-  }
-});
-
-async function queryFilter(filters: FilterPrompt, textItems: TextItem[]) {
-  const res = await fetch("http://localhost:3000/api/filter", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      textItems,
-      filters,
-    }),
-    // signal: controller.signal,
-  });
-
-  const data = await res.json();
-
-  if (!(data.response === "Success")) {
-    console.error("Error in response");
-    return;
-  }
-  return data.filteredTextItems;
-}
-
-let lastCallTime = 0;
-
-async function debouncedFetch(textItems: TextItem[]) {
-  const now = Date.now();
-
-  if (now - lastCallTime >= 5000) {
-    lastCallTime = now;
-    console.log("fetching api");
-
-    // Put your fetch call here inside setTimeout,
-    // so it's delayed by 1000 milliseconds
-    setTimeout(async () => {
-      try {
-        console.log("fetching data");
-        const filterConfig = await chrome.storage.local.get("filterConfig");
-        const filteredTextItems = await queryFilter(
-          {
-            filterConfig: filterConfig.filterConfig,
-          },
-          textItems
-        );
-
-        chrome.storage.local.set({ filteredTextItems });
-
-        if (!filteredTextItems) {
-          return;
-        }
-
-        chrome.tabs.query(
-          { active: true, currentWindow: true },
-          function (tabs) {
-            if (!tabs[0].id) return;
-            chrome.scripting.executeScript({
-              target: { tabId: tabs[0].id },
-              func: (data) => {
-                // We'll implement this function in the content script
-                (window as any).removeElements(data);
-              },
-              args: [filteredTextItems],
-            });
-          }
-        );
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          console.log("Fetch operation aborted");
-        } else {
-          console.error("error incoming");
-          console.error(error);
-        }
-      }
-    }, 1000);
-  } else {
-    console.log("Skipping fetch due to rate limit");
-  }
-}
 
 // Execute debounced fetch request to filter api
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -178,37 +83,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
-// Start the observer when the tab is updated
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  if (changeInfo.status === "complete" && tab.active) {
-    // Call startObserving only if the URL is in the allowed domains
-
-    // fetch current domain, not entire url, aka www.twitter.com/home -> twitter.com
-
-    const domain = tab.url?.replace("www.", "").split("/")[2];
-
-    console.log(tab.url);
-
-    if (!allowedDomains.includes(domain || "")) {
-      return console.log("not allowed domain");
-    }
-
-    console.log("observer started for domain", domain);
-
-    startObserving(tabId);
-  } else {
-    chrome.action.setBadgeText({ text: "" });
-  }
-});
-
-// get current tab
-// async function getCurrentTab() {
-//   let queryOptions = { active: true, lastFocusedWindow: true };
-//   // `tab` will either be a `tabs.Tab` instance or `undefined`.
-//   let [tab] = await chrome.tabs.query(queryOptions);
-//   return tab;
-// }
-
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (!tabs[0].id) return;
@@ -226,66 +100,32 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
-// Stop observing when the tab is closed
-chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
-  chrome.scripting.executeScript({
-    target: { tabId },
-    func: () => {
-      if ((window as any).observer) {
-        (window as any).observer.disconnect();
-      }
-    },
-  });
-});
-
-// set the badge text to the number of hidden text items
-chrome.storage.onChanged.addListener(function (changes, namespace) {
-  if (changes.filteredTextItems) {
-    chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-      chrome.action.setBadgeText({
-        text: (changes.filteredTextItems as FilteredTextItem[])
-          .filter((filteredTextItem) => filteredTextItem.hide)
-          .length.toString(),
-      });
-    });
-  }
-});
-
-// on page load, run window.debouncedGrabAndFilter();
-// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-//   chrome.scripting.executeScript({
-//     target: { tabId },
-//     func: () => {
-//       if (changeInfo.status === "complete" && tab.active) {
-//         // Call startObserving only if the URL is in the allowed domains
-//         const domain = tab.url?.replace("www.", "").split("/")[2];
-
-//         console.log(tab.url);
-
-//         if (!allowedDomains.includes(domain || "")) {
-//           return console.log("not allowed domain");
-//         }
-//         window.debouncedGrabAndFilter();
-//       }
-//     },
-//   });
-// });
-
-// set the badge text to the number of textItems
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-//   if (request.fetchFilter) {
+// // set the badge text to the number of hidden text items
+// chrome.storage.onChanged.addListener(function (changes, namespace) {
+//   if (changes.filteredTextItems?.length) {
 //     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
-//       chrome.action.setBadgeText({ text: request.textItems.length.toString() });
+//       chrome.action.setBadgeText({
+//         text: (changes.filteredTextItems as FilteredTextItem[])
+//           .filter((filteredTextItem) => filteredTextItem.hide)
+//           .length.toString(),
+//       });
 //     });
-
-//     console.log("executing script");
 //   }
 // });
 
-// Store the texts in local storage
+// Local storage listeners
+
+// Add text items to local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.fetchFilter) {
     chrome.storage.local.set({ textItems: request.textItems }, function () {});
+  }
+});
+
+// Error Handling
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.noTargetNode) {
+    console.log("No target node found");
   }
 });
 

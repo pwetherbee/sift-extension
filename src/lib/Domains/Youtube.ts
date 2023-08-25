@@ -1,5 +1,11 @@
+import { DomainInfo } from "@/src/types/DomainInfo";
 import { RemovalConfig } from "@/src/types/RemovalConfig";
 import { FilteredTextItem } from "@/src/types/TextItem";
+
+export const YoutubeInfo: DomainInfo = {
+  domain: "twitter.com",
+  contextPrompt: "Filter Tweets",
+};
 
 export function getYoutubeContext() {
   return document.querySelector("h1");

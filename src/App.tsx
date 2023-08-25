@@ -28,6 +28,7 @@ import useLocalStorageState from "./hooks/useLocalStorageState";
 import { Delete, Remove } from "@mui/icons-material";
 import { FilteredTextItem } from "./types/TextItem";
 import { Settings } from "./types/Settings";
+import { FilterConfig } from "./types/FilterConfig";
 
 const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 
@@ -59,15 +60,21 @@ function App() {
   const [currentDomain, setCurrentDomain] = useState("");
   const [disabled, setDisabled] = useLocalStorageState("disabled", false);
   const [newPrompt, setNewPrompt] = useState("");
-  const [filterConfig, setFilterConfig] = useLocalStorageState("filterConfig", {
-    defaults: defaultFilterKeys,
-    custom: [
-      {
-        text: "remove all negative sounding posts",
-        active: true,
+  const [filterConfig, setFilterConfig] = useLocalStorageState<FilterConfig>(
+    "filterConfig",
+    {
+      filters: {
+        defaults: defaultFilterKeys,
+        custom: [
+          {
+            text: "remove all negative sounding posts",
+            active: true,
+          },
+        ],
       },
-    ],
-  });
+      strength: 1,
+    }
+  );
 
   const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
     on: true,
@@ -86,11 +93,11 @@ function App() {
   };
 
   const isChecked = (key: string) => {
-    return filterConfig.defaults.includes(key);
+    return filterConfig.filters.defaults.includes(key);
   };
 
   const isCustomChecked = (index: number) => {
-    return filterConfig.custom[index]?.active;
+    return filterConfig.filters.custom[index]?.active;
   };
 
   const handleCheckSettings = (key: keyof Settings) => (e: any) => {
@@ -111,12 +118,19 @@ function App() {
     if (e.target.checked) {
       setFilterConfig((prev) => ({
         ...prev,
-        defaults: [...prev.defaults, key],
+        filters: {
+          ...prev.filters,
+          defaults: [...prev.filters.defaults, key],
+        },
       }));
     } else {
       setFilterConfig((prev) => ({
         ...prev,
-        defaults: prev.defaults.filter((item) => item !== key),
+
+        filters: {
+          ...prev.filters,
+          defaults: prev.filters.defaults.filter((item) => item !== key),
+        },
       }));
     }
   };
@@ -125,16 +139,28 @@ function App() {
     if (e.target.checked) {
       setFilterConfig((prev) => ({
         ...prev,
-        custom: prev.custom.map((item, i) =>
-          i === index ? { ...item, active: true } : item
-        ),
+        // custom: prev.custom.map((item, i) =>
+        //   i === index ? { ...item, active: true } : item
+        // ),
+        filters: {
+          ...prev.filters,
+          custom: prev.filters.custom.map((item, i) =>
+            i === index ? { ...item, active: true } : item
+          ),
+        },
       }));
     } else {
       setFilterConfig((prev) => ({
         ...prev,
-        custom: prev.custom.map((item, i) =>
-          i === index ? { ...item, active: false } : item
-        ),
+        // custom: prev.custom.map((item, i) =>
+        //   i === index ? { ...item, active: false } : item
+        // ),
+        filters: {
+          ...prev.filters,
+          custom: prev.filters.custom.map((item, i) =>
+            i === index ? { ...item, active: false } : item
+          ),
+        },
       }));
     }
   };
@@ -142,20 +168,33 @@ function App() {
   const handleRemoveCustom = (index: number) => {
     setFilterConfig((prev) => ({
       ...prev,
-      custom: prev.custom.filter((item, i) => i !== index),
+      filters: {
+        ...prev.filters,
+        custom: prev.filters.custom.filter((item, i) => i !== index),
+      },
     }));
   };
 
   const handleSavePrompt = () => {
     setFilterConfig((prev) => ({
       ...prev,
-      custom: [
-        ...prev.custom,
-        {
-          text: newPrompt,
-          active: true,
-        },
-      ],
+      // custom: [
+      //   ...prev.custom,
+      //   {
+      //     text: newPrompt,
+      //     active: true,
+      //   },
+      // ],
+      filters: {
+        ...prev.filters,
+        custom: [
+          ...prev.filters.custom,
+          {
+            text: newPrompt,
+            active: true,
+          },
+        ],
+      },
     }));
     setNewPrompt("");
   };
@@ -293,7 +332,7 @@ function App() {
             }}
           >
             <FormLabel>Your Filters: </FormLabel>
-            {filterConfig.custom.map((item, i) => (
+            {filterConfig.filters.custom.map((item, i) => (
               <Stack
                 direction={"row"}
                 spacing={1}

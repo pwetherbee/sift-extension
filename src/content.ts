@@ -1,6 +1,5 @@
+import { getContext, getTextElements } from "./lib/DomainSpecificGetters";
 import filterItem from "./lib/filterElement";
-import getContext from "./lib/getContext";
-import getTextElements from "./lib/getTextContent";
 import { FilteredTextItem } from "./types/TextItem";
 
 declare global {
@@ -26,7 +25,7 @@ function grabAndFilter() {
   const domain = window.location.hostname;
   const contextElement = getContext(domain);
   const textItems = getTextElements(domain).slice(0, 20);
-  console.log(textItems);
+
   if (textItems.length > 0) {
     chrome.runtime.sendMessage({
       fetchFilter: true,
@@ -36,23 +35,8 @@ function grabAndFilter() {
   }
 }
 
-// Modules for fetching text elements
-
-// function removeTweets() {
-//   let parentElement = element.parentElement;
-//   while (parentElement) {
-//     if (parentElement.getAttribute("data-testid") === "tweet") {
-//       return { id: element.id, text: element.textContent };
-//     }
-//     parentElement = parentElement.parentElement;
-//   }
-// }
-
 window.removeElements = function (filteredTextItems) {
   // fetch current domain, such as twitter.com or youtube.com
-
-  const domain = window.location.hostname;
-
   filteredTextItems.forEach((item) =>
     filterItem(item, {
       hideStyle: "blur",
