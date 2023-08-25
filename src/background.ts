@@ -129,4 +129,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.message) {
+    console.log(request.message);
+  }
+});
+
 export {};

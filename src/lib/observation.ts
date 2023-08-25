@@ -1,4 +1,5 @@
-import { getTargetNode } from "./DomainSpecificGetters";
+import { getTwitterTargetNode } from "./Domains/Twitter";
+import { domainConfigs, getTargetNode } from "./domainSpecificGetters";
 
 export function startObserving(tabId: number) {
   chrome.scripting.executeScript({
@@ -6,6 +7,10 @@ export function startObserving(tabId: number) {
     func: () => {
       const domain = window.location.hostname;
       const targetNode = getTargetNode(domain);
+
+      chrome.runtime.sendMessage({
+        message: `target node for domain ${domain} is ${targetNode}`,
+      });
 
       if (!targetNode)
         return chrome.runtime.sendMessage({ noTargetNode: true });

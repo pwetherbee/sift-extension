@@ -8,7 +8,7 @@ import { fetchTweets } from "./Domains/Twitter";
 import { fetchYoutubeComments } from "./Domains/Youtube";
 import { DomainInfo } from "../types/DomainInfo";
 
-const domainConfigs: {
+export const domainConfigs: {
   [key: string]: {
     getContext: () => Element | null;
     getTargetNode: () => Element | null;
@@ -30,19 +30,27 @@ const domainConfigs: {
   },
 };
 
-export function getContext(domain: string) {
-  domain = domain.replace("www.", "");
-  return domainConfigs[domain]?.getContext();
-}
-
 export function getDomainInfo(domain: string) {
   domain = domain.replace("www.", "");
   return domainConfigs[domain]?.domainInfo;
 }
 
-export function getTargetNode(domain: string) {
+export function getContext(domain: string) {
   domain = domain.replace("www.", "");
-  return domainConfigs[domain]?.getTargetNode();
+  return domainConfigs[domain]?.getContext();
+}
+
+export function getTargetNode(domain: string) {
+  // not sure why webpack hates doing it the normal way, but this works
+  domain = domain.replace("www.", "");
+  switch (domain) {
+    case "twitter.com":
+      return getTwitterTargetNode();
+    case "youtube.com":
+      return getYoutubeTargetNode();
+    default:
+      return null;
+  }
 }
 
 export function getTextElements(domain: string) {

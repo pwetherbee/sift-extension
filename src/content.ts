@@ -1,4 +1,4 @@
-import { getContext, getTextElements } from "./lib/DomainSpecificGetters";
+import { getContext, getTextElements } from "./lib/domainSpecificGetters";
 import filterItem from "./lib/filterElement";
 import { FilteredTextItem } from "./types/TextItem";
 
