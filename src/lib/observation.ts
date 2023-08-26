@@ -19,8 +19,11 @@ export function startObserving(tabId: number) {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-            window.debouncedGrabAndFilter();
+            chrome.runtime.sendMessage({
+              message: `Mutation detected on ${domain}, ${mutation.type}, length ${mutation.addedNodes.length}`,
+            });
           }
+          window.debouncedGrabAndFilter();
         });
       });
 

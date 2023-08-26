@@ -3,8 +3,8 @@ import { RemovalConfig } from "@/src/types/RemovalConfig";
 import { FilteredTextItem } from "@/src/types/TextItem";
 
 export const YoutubeInfo: DomainInfo = {
-  domain: "twitter.com",
-  contextPrompt: "Filter Tweets",
+  domain: "youtube.com",
+  contextPrompt: "Filter Youtube comments",
 };
 
 export function getYoutubeContext() {

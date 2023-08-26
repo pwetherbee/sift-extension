@@ -1,5 +1,7 @@
-import { getContext, getTextElements } from "./lib/domainSpecificGetters";
-import filterItem from "./lib/filterElement";
+import filterItem, {
+  getContext,
+  getTextElements,
+} from "./lib/domainSpecificGetters";
 import { FilteredTextItem } from "./types/TextItem";
 
 declare global {
@@ -25,6 +27,10 @@ function grabAndFilter() {
   const domain = window.location.hostname;
   const contextElement = getContext(domain);
   const textItems = getTextElements(domain).slice(0, 20);
+
+  chrome.runtime.sendMessage({
+    message: `Context element is ${contextElement}, text items are ${textItems}`,
+  });
 
   if (textItems.length > 0) {
     chrome.runtime.sendMessage({
