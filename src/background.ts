@@ -54,6 +54,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.executeFilter) {
     console.log("Removing elements");
+    chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {
+      chrome.action.setBadgeText({
+        text: (request.filteredTextItems as FilteredTextItem[])
+          .filter((filteredTextItem) => filteredTextItem.hide)
+          .length.toString(),
+      });
+    });
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (!tabs[0].id) return;
       chrome.scripting.executeScript({
@@ -100,7 +107,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
   });
 });
 
-// // set the badge text to the number of hidden text items
+// set the badge text to the number of hidden text items
 // chrome.storage.onChanged.addListener(function (changes, namespace) {
 //   if (changes.filteredTextItems?.length) {
 //     chrome.action.setBadgeBackgroundColor({ color: "#ddffdd" }, () => {

@@ -1,3 +1,4 @@
+import { filterConfigDefaults } from "./defaults/FilterConfigDefaults";
 import filterItem, {
   getContext,
   getTextElements,
@@ -57,6 +58,13 @@ window.debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);
 chrome.runtime.sendMessage({
   action: "getSource",
   source: document.body.innerText,
+});
+
+chrome.storage.local.get("filterConfig", (filterConfig) => {
+  if (!filterConfig.filterConfig) return console.log("No filter config");
+  chrome.storage.local.set({
+    filterConfig: filterConfigDefaults,
+  });
 });
 
 export {};

@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { FilterConfig } from "../types/FilterConfig";
 import { TextItem } from "../types/TextItem";
 
@@ -6,7 +7,7 @@ export async function queryFilter(
   textItems: TextItem[]
 ) {
   if (!textItems?.length) return console.log("No text items to filter");
-  const res = await fetch("http://localhost:3000/api/filter", {
+  const res = await fetch(config.apiEndpoint + "/filter", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -14,15 +15,17 @@ export async function queryFilter(
     },
     body: JSON.stringify({
       textItems,
-      filterConfig: {
-        ...filterConfig,
-        filters: {
-          ...filterConfig.filters,
-          custom: filterConfig.filters.custom.filter(
-            (customFilter) => customFilter.active
-          ),
-        },
-      },
+      filterConfig: filterConfig
+        ? {
+            ...filterConfig,
+            filters: {
+              ...filterConfig?.filters,
+              custom: filterConfig?.filters?.custom.filter(
+                (customFilter) => customFilter.active
+              ),
+            },
+          }
+        : {},
     }),
     // signal: controller.signal,
   });
@@ -54,7 +57,7 @@ export async function debouncedFetch(textItems: TextItem[]) {
         console.log(filterConfig);
 
         //
-        if (!((filterConfig.filterConfig.filters as any) instanceof Object)) {
+        if (!((filterConfig.filterConfig?.filters as any) instanceof Object)) {
           // clear storage
           chrome.storage.local.clear();
         }

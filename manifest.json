@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "0.0.1",
   "manifest_version": 3,
   "name": "Sift",
+  "description": "Sift is a browser extension that helps you filter out the noise in your social media feeds.",
   "permissions": ["activeTab", "tabs", "storage", "scripting"],
   "action": {
     "default_icon": {
@@ -22,5 +23,11 @@
   "background": {
     "service_worker": "dist/js/background.js"
   },
-  "host_permissions": ["*://*.twitter.com/*", "*://*.youtube.com/*", "*://*.amazon.com/*"]
+
+  "host_permissions": [
+    "*://*.twitter.com/*",
+    "*://*.youtube.com/*",
+    "*://*.amazon.com/*",
+    "*://*.vercel.com/*"
+  ]
 }

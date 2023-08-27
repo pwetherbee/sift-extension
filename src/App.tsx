@@ -29,6 +29,7 @@ import { Delete, Remove } from "@mui/icons-material";
 import { FilteredTextItem } from "./types/TextItem";
 import { Settings } from "./types/Settings";
 import { FilterConfig } from "./types/FilterConfig";
+import { filterConfigDefaults } from "./defaults/FilterConfigDefaults";
 
 const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 
@@ -62,18 +63,7 @@ function App() {
   const [newPrompt, setNewPrompt] = useState("");
   const [filterConfig, setFilterConfig] = useLocalStorageState<FilterConfig>(
     "filterConfig",
-    {
-      filters: {
-        defaults: defaultFilterKeys,
-        custom: [
-          {
-            text: "remove all negative sounding posts",
-            active: true,
-          },
-        ],
-      },
-      strength: 1,
-    }
+    filterConfigDefaults
   );
 
   const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
