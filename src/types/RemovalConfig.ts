@@ -1,3 +1,3 @@
 export interface RemovalConfig {
-  hideStyle: "remove" | "blur";
+  hideStyle: "remove" | "blur" | "show";
 }

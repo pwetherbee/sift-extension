@@ -1,5 +1,5 @@
 export interface TextItem {
-  text: string;
+  text: string | null;
   id: string;
 }
 

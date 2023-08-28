@@ -11,12 +11,14 @@ export function getAmazonContext() {
   return document.getElementById("productTitle");
 }
 
-export function fetchAmazonReviews() {
+export async function fetchAmazonReviews() {
   const elements = document.querySelectorAll('[data-hook="review"]');
+  //if (element.getAttribute("data-filtered"))
   return Array.from(elements)
+    .filter((element) => {
+      return !element.getAttribute("data-filtered");
+    })
     .map((element) => {
-      if (element.getAttribute("data-filtered")) return;
-
       // Find the child node with attribute data-hook="review-body"
       const reviewBody = element.querySelector('[data-hook="review-body"]');
       const reviewText = reviewBody?.textContent
@@ -24,8 +26,7 @@ export function fetchAmazonReviews() {
         : null;
 
       return { id: element.id, text: reviewText };
-    })
-    .filter((element) => element && element.text); // Filter out null or empty texts
+    });
 }
 
 export function getAmazonTargetNode() {
@@ -43,7 +44,7 @@ export function filterAmazonReviews(
   const elementId = item.textItem.id;
   const element = document.getElementById(elementId);
   if (!element) return;
-  if (element.textContent?.includes(item.textItem.text)) {
+  if (element.textContent?.includes(item.textItem.text as string)) {
     // set isFiltered tag
     element.setAttribute("data-filtered", "true");
 
@@ -52,7 +53,9 @@ export function filterAmazonReviews(
       element.style.display = item.hide ? "none" : "";
     }
     if (config.hideStyle === "blur") {
-      element.style.filter = item.hide ? "blur(5px)" : "";
+      // element.style.filter = item.hide ? "blur(5px)" : "";
+      // add class to element called 'sift-filter'
+      element.classList.add("sift-filter");
       if (item.hide) {
         element.addEventListener("click", (e) => {
           element.style.filter = "";

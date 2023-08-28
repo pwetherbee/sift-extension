@@ -8,6 +8,7 @@ declare global {
     removeElements: (filteredTextItems: FilteredTextItem[]) => void;
     grabAndFilter: () => void;
     debouncedGrabAndFilter: () => void;
+    toggleFilter: (filterOn: boolean) => void;
     observer: MutationObserver;
   }
 }
@@ -121,6 +122,45 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 // });
 
 // Local storage listeners
+
+// turn off filter when settings.on is false
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  if (changes.settings?.newValue?.on === false) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0].id) return;
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => {
+          if ((window as any).observer) {
+            (window as any).observer.disconnect();
+          }
+          (window as any).toggleFilter(false);
+        },
+      });
+    });
+  } else {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0].id) return;
+
+      const domain = tabs[0].url?.replace("www.", "").split("/")[2];
+
+      if (!allowedDomains.includes(domain || "")) {
+        return console.log("not allowed domain");
+      }
+
+      console.log("observer started for domain", domain);
+
+      startObserving(tabs[0].id);
+
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => {
+          (window as any).toggleFilter(true);
+        },
+      });
+    });
+  }
+});
 
 // Add text items to local storage
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {

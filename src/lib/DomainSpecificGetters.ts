@@ -16,7 +16,7 @@ import {
 } from "./Domains/Amazon";
 
 import { RemovalConfig } from "../types/RemovalConfig";
-import { FilteredTextItem } from "../types/TextItem";
+import { FilteredTextItem, TextItem } from "../types/TextItem";
 import { filterTweet } from "./Domains/Twitter";
 import { filterYoutubeComment } from "./Domains/Youtube";
 import getDomain from "./getDomain";
@@ -25,7 +25,9 @@ export const domainConfigs: {
   [key: string]: {
     getContext: () => Element | null;
     getTargetNode: () => Element | null;
-    getTextElements: () => ({ id: string; text: string | null } | undefined)[];
+    // convert to promise
+    // getTextElements: () => ({ id: string; text: string | null } | undefined)[];
+    getTextElements: () => Promise<TextItem[]>;
     filterText: (item: FilteredTextItem, filterConfig: RemovalConfig) => void;
     domainInfo: DomainInfo;
   };
@@ -79,7 +81,7 @@ export function getTargetNode(domain: string) {
   }
 }
 
-export function getTextElements(domain: string) {
+export async function getTextElements(domain: string) {
   domain = domain.replace("www.", "");
   return domainConfigs[domain]?.getTextElements();
 }

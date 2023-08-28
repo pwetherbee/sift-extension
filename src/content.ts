@@ -10,6 +10,7 @@ declare global {
     removeElements: (filteredTextItems: FilteredTextItem[]) => void;
     grabAndFilter: () => void;
     debouncedGrabAndFilter: () => void;
+    toggleFilter: (filterOn: boolean) => void;
   }
 }
 
@@ -23,11 +24,20 @@ function debounceHandler(func: Function, delay: number) {
   };
 }
 
-function grabAndFilter() {
+async function grabAndFilter() {
+  // if settings.on === false, return
+
+  const settings = await chrome.storage.local.get("settings");
+
+  if (!settings.settings?.on)
+    return chrome.runtime.sendMessage({
+      message: "Filtering is off",
+    });
+
   // fetch current domain, such as twitter.com or youtube.com
   const domain = window.location.hostname;
   const contextElement = getContext(domain);
-  const textItems = getTextElements(domain).slice(0, 20);
+  const textItems = (await getTextElements(domain)).slice(0, 20);
 
   chrome.runtime.sendMessage({
     message: `Context element is ${contextElement}, text items are ${textItems}`,
@@ -49,6 +59,30 @@ window.removeElements = function (filteredTextItems) {
       hideStyle: "blur",
     })
   );
+
+  // create a css class called 'sift-filter' that applies a blur filter
+  window.toggleFilter(true);
+};
+
+window.toggleFilter = function (filterOn: boolean) {
+  // edit existing css class called 'sift-filter' that applies a blur filter
+  if (filterOn) {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .sift-filter {
+        filter: blur(5px);
+      }
+    `;
+    document.head.appendChild(style);
+  } else {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .sift-filter {
+        filter: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 };
 
 window.debouncedGrabAndFilter = debounceHandler(grabAndFilter, 300);

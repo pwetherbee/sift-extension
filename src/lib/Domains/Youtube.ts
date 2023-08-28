@@ -11,7 +11,7 @@ export function getYoutubeContext() {
   return document.querySelector("h1");
 }
 
-export function fetchYoutubeComments() {
+export async function fetchYoutubeComments() {
   const elements = document.querySelectorAll("[id=content-text]");
 
   // filter out elements that have already been filtered with data-filtered attribute
@@ -20,12 +20,15 @@ export function fetchYoutubeComments() {
   //   return !element.getAttribute("data-filtered");
   // });
 
+  //  if (element.getAttribute("data-filtered")) return;
+
   return Array.from(elements)
-    .map((element) => {
-      if (element.getAttribute("data-filtered")) return;
-      return { id: element.id, text: element.textContent };
+    .filter((element) => {
+      return !element.getAttribute("data-filtered");
     })
-    .filter((element) => element);
+    .map((element) => {
+      return { id: element.id, text: element.textContent };
+    });
 }
 
 export function getYoutubeTargetNode() {
@@ -47,16 +50,18 @@ export function filterYoutubeComment(
     document.querySelectorAll<HTMLElement>("[id=content-text]")
   )) {
     // if text matches, filter comment
-    if (comment.textContent?.includes(item.textItem.text)) {
+    if (comment.textContent?.includes(item.textItem.text as string)) {
       // set isFiltered tag
       comment.setAttribute("data-filtered", "true");
 
       // apply filter
+      // add class to element called 'sift-filter'
+      comment.classList.add("sift-filter");
       if (config.hideStyle === "remove") {
         comment.style.display = item.hide ? "none" : "";
       }
+
       if (config.hideStyle === "blur") {
-        comment.style.filter = item.hide ? "blur(5px)" : "";
         if (item.hide) {
           comment.addEventListener("click", (e) => {
             comment.style.filter = "";

@@ -30,6 +30,7 @@ import { FilteredTextItem } from "./types/TextItem";
 import { Settings } from "./types/Settings";
 import { FilterConfig } from "./types/FilterConfig";
 import { filterConfigDefaults } from "./defaults/FilterConfigDefaults";
+import { settingsDefaults } from "./defaults/SettingsDefaults";
 
 const defaultFilterKeys = ["No Politics", "No Racism", "No Spam", "No Rants"];
 
@@ -66,11 +67,10 @@ function App() {
     filterConfigDefaults
   );
 
-  const [settings, setSettings] = useLocalStorageState<Settings>("settings", {
-    on: true,
-    blur: false,
-    autoHide: true,
-  });
+  const [settings, setSettings] = useLocalStorageState<Settings>(
+    "settings",
+    settingsDefaults
+  );
 
   // const [count, setCount] = useState(0);
 
@@ -88,6 +88,13 @@ function App() {
 
   const isCustomChecked = (index: number) => {
     return filterConfig.filters.custom[index]?.active;
+  };
+
+  const handleToggleOn = () => {
+    setSettings((prev) => ({
+      ...prev,
+      on: !prev.on,
+    }));
   };
 
   const handleCheckSettings = (key: keyof Settings) => (e: any) => {
@@ -263,8 +270,8 @@ function App() {
           justifyContent={"center"}
           spacing={0}
         >
-          <IconButton size="large" onClick={handleCheckSettings("on")}>
-            {!settings.on ? (
+          <IconButton size="large" onClick={handleToggleOn}>
+            {settings.on ? (
               <FilterAltIcon
                 sx={{
                   fontSize: 50,
