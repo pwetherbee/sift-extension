@@ -63,7 +63,7 @@ export function filterTweet(item: FilteredTextItem, config: RemovalConfig) {
       if (parentElement.getAttribute("data-filtered")) return;
       // parentElement.style.filter = item.hide ? "blur(5px)" : "";
       // add class to element called 'sift-filter'
-      parentElement.classList.add("sift-filter");
+      if (item.hide) parentElement.classList.add("sift-filter");
       parentElement.addEventListener("click", (e) => {
         e.stopPropagation();
         (parentElement as any).style.filter = "";

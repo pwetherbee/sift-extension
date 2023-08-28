@@ -34,7 +34,7 @@ export async function queryFilter(
 
   if (!(data.response === "Success")) {
     console.error("Error in response");
-    return;
+    return console.error(data);
   }
   return data.filteredTextItems;
 }

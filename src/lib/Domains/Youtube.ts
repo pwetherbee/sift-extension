@@ -1,6 +1,7 @@
 import { DomainInfo } from "@/src/types/DomainInfo";
 import { RemovalConfig } from "@/src/types/RemovalConfig";
 import { FilteredTextItem } from "@/src/types/TextItem";
+import { getSHA256Hash } from "../hash";
 
 export const YoutubeInfo: DomainInfo = {
   domain: "youtube.com",
@@ -22,7 +23,24 @@ export async function fetchYoutubeComments() {
 
   //  if (element.getAttribute("data-filtered")) return;
 
-  return Array.from(elements)
+  const filterConfig = await chrome.storage.local.get("filterConfig");
+
+  // sha 256 hash of filterConfig
+  const filterConfigHash = await getSHA256Hash(JSON.stringify(filterConfig));
+
+  // filter out tweets that have already been filtered
+  const filteredElements = Array.from(elements).filter((element) => {
+    return (
+      (element as any).getAttribute("data-filterHash") !== filterConfigHash
+    );
+  });
+
+  filteredElements.forEach((element) => {
+    // apply filterHash attribute to each element
+    (element as any).setAttribute("data-filterHash", filterConfigHash);
+  });
+
+  return Array.from(filteredElements)
     .filter((element) => {
       return !element.getAttribute("data-filtered");
     })
@@ -56,7 +74,7 @@ export function filterYoutubeComment(
 
       // apply filter
       // add class to element called 'sift-filter'
-      comment.classList.add("sift-filter");
+      if (item.hide) comment.classList.add("sift-filter");
       if (config.hideStyle === "remove") {
         comment.style.display = item.hide ? "none" : "";
       }
