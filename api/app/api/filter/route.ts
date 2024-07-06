@@ -1,4 +1,6 @@
-import { TextItem, FilterConfig, FilteredTextItem } from "@/lib/types/filter";
+import { FilteredTextItem } from "@/lib/interfaces/filtered-text-item";
+import { TextItem } from "@/lib/interfaces/text-item";
+import { FilterConfig } from "@/lib/types/filter";
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextRequest, NextResponse } from "next/server";
 

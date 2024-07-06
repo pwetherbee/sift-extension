@@ -1,12 +1,4 @@
-export interface TextItem {
-  text: string;
-  id: string;
-}
-
-export interface FilteredTextItem {
-  textItem: TextItem;
-  hide: boolean;
-}
+import { FilteredTextItem } from "../interfaces/filtered-text-item";
 
 export interface Data {
   response: string | undefined;
