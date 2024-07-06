@@ -8,6 +8,6 @@ export const config: {
   filterConfigDefault: FilterConfig;
 } = {
   allowedDomains: allowedDomains,
-  apiEndpoint: "https://sift-backend.vercel.app/api",
+  apiEndpoint: "http://localhost:4040/api",
   filterConfigDefault: filterConfigDefaults,
 };

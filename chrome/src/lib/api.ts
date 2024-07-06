@@ -19,10 +19,10 @@ export async function queryFilter(
         ? {
             ...filterConfig,
             filters: {
-              ...filterConfig?.filters,
-              custom: filterConfig?.filters?.custom.filter(
-                (customFilter) => customFilter.active
-              ),
+              ...filterConfig?.filters.defaults,
+              custom: filterConfig?.filters?.custom
+                .filter((customFilter) => customFilter.active)
+                .map((customFilter) => customFilter.text),
             },
           }
         : {},
