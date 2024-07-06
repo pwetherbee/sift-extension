@@ -19,7 +19,7 @@ export async function queryFilter(
         ? {
             ...filterConfig,
             filters: {
-              ...filterConfig?.filters.defaults,
+              default: filterConfig?.filters.defaults,
               custom: filterConfig?.filters?.custom
                 .filter((customFilter) => customFilter.active)
                 .map((customFilter) => customFilter.text),
@@ -63,6 +63,8 @@ export async function debouncedFetch(textItems: TextItem[]) {
         }
 
         if (!filterConfig.filterConfig) return console.log("No filter config");
+
+        console.log("Filter config found", filterConfig.filterConfig);
 
         const filteredTextItems = await queryFilter(
           filterConfig.filterConfig as FilterConfig,

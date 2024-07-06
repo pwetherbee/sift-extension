@@ -11,6 +11,10 @@ export const instructions = `
   - 'textItems' is an array of objects, where each object is a text item to be evaluated. Each text item object has an 'id' and 'text' properties.
   - 'config' is an object that contains certain user defined parameters
     - 'filterStrength' is a number from 1(weak) to 10(strong) which determines the strictness of the filter
+
+
+**Output**:
+- Use the id of the text item to tag the decision.
 `;
 
 export const instructionsWithExplanation = `

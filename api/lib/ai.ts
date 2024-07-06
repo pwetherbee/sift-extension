@@ -17,7 +17,7 @@ export async function filter(
   const prompt = `
   ${instructions}
   ** Text Items **
-  ${textItems.map((item) => item.text).join("\n")}
+  ${textItems.map((item) => JSON.stringify(item)).join("\n")}
   ** Filter Config **
   ${JSON.stringify(filterConfig)}
   `;
@@ -36,10 +36,10 @@ export async function filter(
 
   console.log("Decisions", decisions);
 
-  const filteredTextItems = textItems.map((textItem, index) => {
+  const filteredTextItems = textItems.map((textItem) => {
     return {
       textItem,
-      hide: decisions[index].hide,
+      hide: !!decisions.find((decision) => decision.id === textItem.id)?.hide,
     };
   });
 

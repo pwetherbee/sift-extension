@@ -27,6 +27,8 @@ export const POST = async (
     filterConfig: FilterConfig;
   } = await req.json();
 
+  console.log(textItems, filterConfig);
+
   if (!textItems || !filterConfig) {
     return NextResponse.json(
       {
