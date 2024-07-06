@@ -4,7 +4,7 @@ import { FilteredTextItem } from "@/src/types/TextItem";
 import { getSHA256Hash } from "../hash";
 
 export const TwitterInfo: DomainInfo = {
-  domain: "twitter.com",
+  domain: "x.com",
   contextPrompt: "Filter Tweets",
 };
 

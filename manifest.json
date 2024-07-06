@@ -25,7 +25,7 @@
   },
 
   "host_permissions": [
-    "*://*.twitter.com/*",
+    "*://*.x.com/*",
     "*://*.youtube.com/*",
     "*://*.amazon.com/*",
     "*://*.vercel.com/*"

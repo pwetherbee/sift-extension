@@ -32,7 +32,7 @@ export const domainConfigs: {
     domainInfo: DomainInfo;
   };
 } = {
-  "twitter.com": {
+  "x.com": {
     getContext: getTwitterContext,
     getTargetNode: getTwitterTargetNode,
     getTextElements: fetchTweets,
@@ -70,14 +70,14 @@ export function getTargetNode(domain: string) {
   // not sure why webpack hates doing it the normal way, but this works
   domain = domain.replace("www.", "");
   switch (domain) {
-    case "twitter.com":
+    case "x.com":
       return getTwitterTargetNode();
     case "youtube.com":
       return getYoutubeTargetNode();
     case "amazon.com":
       return getAmazonTargetNode();
     default:
-      return null;
+      throw new Error("Invalid domain");
   }
 }
 

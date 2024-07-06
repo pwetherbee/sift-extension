@@ -1,5 +1,5 @@
 import { getTwitterTargetNode } from "./Domains/Twitter";
-import { domainConfigs, getTargetNode } from "./domainSpecificGetters";
+import { domainConfigs, getTargetNode } from "./domain-specific-getters";
 
 export function startObserving(tabId: number) {
   chrome.scripting.executeScript({

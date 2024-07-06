@@ -2,7 +2,7 @@ import { filterConfigDefaults } from "./defaults/FilterConfigDefaults";
 import filterItem, {
   getContext,
   getTextElements,
-} from "./lib/domainSpecificGetters";
+} from "./lib/domain-specific-getters";
 import { FilteredTextItem } from "./types/TextItem";
 
 declare global {
@@ -34,10 +34,13 @@ async function grabAndFilter() {
       message: "Filtering is off",
     });
 
-  // fetch current domain, such as twitter.com or youtube.com
+  // fetch current domain, such as x.com or youtube.com
   const domain = window.location.hostname;
   const contextElement = getContext(domain);
-  const textItems = (await getTextElements(domain)).slice(0, 20);
+  const textItems = (await getTextElements(domain))?.slice(0, 20);
+
+  if (!contextElement || !textItems)
+    return console.log("No context element or text items");
 
   chrome.runtime.sendMessage({
     message: `Context element is ${contextElement}, text items are ${textItems}`,

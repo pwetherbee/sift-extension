@@ -112,6 +112,10 @@ function App() {
   };
 
   const handleCheck = (key: string) => (e: any) => {
+    if (!filterConfig.filters?.defaults) {
+      return console.log("no defaults", filterConfig.filters);
+    }
+
     if (e.target.checked) {
       setFilterConfig((prev) => ({
         ...prev,

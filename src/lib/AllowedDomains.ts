@@ -1,1 +1,1 @@
-export const allowedDomains = ["twitter.com", "youtube.com", "amazon.com"];
+export const allowedDomains = ["x.com", "youtube.com", "amazon.com"];

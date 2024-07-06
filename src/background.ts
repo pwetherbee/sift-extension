@@ -20,7 +20,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     const domain = tab.url?.replace("www.", "").split("/")[2];
 
     if (!allowedDomains.includes(domain || "")) {
-      return console.log("not allowed domain");
+      return console.log(`Domain ${domain} not allowed`);
     }
 
     console.log("observer started for domain", domain);
