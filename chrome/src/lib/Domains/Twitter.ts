@@ -66,7 +66,7 @@ export function filterTweet(item: FilteredTextItem, config: RemovalConfig) {
       if (item.hide) parentElement.classList.add("sift-filter");
       parentElement.addEventListener("click", (e) => {
         e.stopPropagation();
-        (parentElement as any).style.filter = "";
+        (parentElement as any).style.classList.remove("sift-filter");
         // add property to item to prevent it from being filtered again
         (parentElement as any).setAttribute("data-filtered", true);
       });

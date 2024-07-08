@@ -3,10 +3,7 @@ import { FilterConfig } from "@/lib/interfaces/filter-config";
 import { FilteredTextItem } from "@/lib/interfaces/filtered-text-item";
 import { TextItem } from "@/lib/interfaces/text-item";
 
-import { NextApiRequest, NextApiResponse } from "next";
 import { NextRequest, NextResponse } from "next/server";
-import { text } from "stream/consumers";
-import { z } from "zod";
 
 interface ResponseData {
   response: string | undefined;
